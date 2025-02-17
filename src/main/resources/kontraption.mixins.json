@@ -13,7 +13,8 @@
     "MixinSoundHandler",
     "MixinThermalEvapRender",
     "MixinThreadMinerSearch",
-    "MixinTileEntityDigitalMiner"
+    "MixinTileEntityDigitalMiner",
+    "MixinMath"
   ],
   "client": [
   ],
