@@ -97,7 +97,7 @@ class LiquidFuelThrusterMultiblockData(
                 ).toMinecraft()
         pos = centerExhaust?.blockPos?.offset(exhaustDirection.normal.multiply(1))
 
-        thrusterPower = (KontraptionConfigs.kontraption.liquidFuelThrust.get() * innerVolume)
+        thrusterPower = (KontraptionConfigs.kontraption.liquidFuelThrust.get() * innerVolume * 3)
         if (ship != null) {
             thrusterLevel = centerExhaust?.level
             worldPosition = center
