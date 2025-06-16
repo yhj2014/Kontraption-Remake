@@ -6,15 +6,16 @@
   "refmap": "Kontraption.refmap.json",
   "mixins": [
     "MixinLaser",
+    "MixinMath",
     "MixinRadiationManager",
     "MixinRenderMechanicalPipe",
     "MixinRenderPressureTube",
     "MixinRenderUniversalCable",
     "MixinSoundHandler",
+    "MixinTeleporter",
     "MixinThermalEvapRender",
     "MixinThreadMinerSearch",
-    "MixinTileEntityDigitalMiner",
-    "MixinMath"
+    "MixinTileEntityDigitalMiner"
   ],
   "client": [
   ],

@@ -9,7 +9,9 @@ import it.zerono.mods.zerocore.lib.multiblock.IMultiblockController
 import it.zerono.mods.zerocore.lib.multiblock.IMultiblockPart
 import it.zerono.mods.zerocore.lib.multiblock.cuboid.AbstractCuboidMultiblockController
 import it.zerono.mods.zerocore.lib.multiblock.validation.IMultiblockValidator
+import mekanism.common.config.MekanismConfig.world
 import net.illuc.kontraption.GlobalRegistry
+import net.illuc.kontraption.Kontraption
 import net.illuc.kontraption.ThrusterInterface
 import net.illuc.kontraption.multiblocks.largeionring.parts.AbstractRingEntity
 import net.illuc.kontraption.particles.ThrusterParticleData
@@ -307,6 +309,8 @@ open class LargeIonRingMultiBlock(
                     val pos = BlockPos(x, y, z).mutable()
                     val (isValid, requiredType) = structureRequirement.isValidBlock(world, pos, true, boundingBox)
                     if (!isValid) {
+                        Kontraption.LOGGER.info("Invalid block at $pos, becouse $requiredType is required but ${thrusterLevel!!.getBlockState(pos)} was found")
+                        Kontraption.LOGGER.info("Bounding Box is from ${boundingBox.minX} .. ${boundingBox.maxX} X and ${boundingBox.minY} .. ${boundingBox.maxY} Y and ${boundingBox.minZ} .. ${boundingBox.maxZ} Z")
                         validatorCallback.setLastError(pos, "Invalid block type for this position $requiredType", *arrayOfNulls(0))
                         return false
                     }
