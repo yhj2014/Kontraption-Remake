@@ -6,7 +6,6 @@
   "refmap": "Kontraption.refmap.json",
   "mixins": [
     "MixinLaser",
-    "MixinMath",
     "MixinRadiationManager",
     "MixinRenderMechanicalPipe",
     "MixinRenderPressureTube",

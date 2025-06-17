@@ -57,13 +57,11 @@ class TileEntityIonThruster(
                         enable()
                     }
                 } else {
-                    if (enabled == true) {
                         disable()
-                    }
                 }
             }
         }
-        setActive(!toUse.isZero())
+        active = !toUse.isZero()
         clientEnergyUsed = toUse
     }
 }

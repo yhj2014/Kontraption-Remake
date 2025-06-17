@@ -46,6 +46,7 @@ import org.joml.Vector3dc
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.saveAttachment
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 
@@ -121,7 +122,7 @@ class TileEntityShipControlInterface(
         return entity
     }
 
-    fun getKeystones(): ConcurrentLinkedQueue<KontraptionKeyBlockControl.KeyStone> = KontraptionKeyBlockControl.getOrCreate(this.ship!!).getKeystones()
+    fun getKeystones(): CopyOnWriteArrayList<KontraptionKeyBlockControl.KeyStone> = KontraptionKeyBlockControl.getOrCreate(this.ship!!).getKeystones()
 
     fun tick() {
         val ship = this.ship ?: return

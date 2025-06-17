@@ -10,16 +10,12 @@ import org.joml.Vector3d
 import org.joml.Vector3i
 import org.valkyrienskies.core.api.ships.*
 import org.valkyrienskies.core.impl.game.ships.PhysShipImpl
-import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CopyOnWriteArrayList
 
 class KontraptionGyroControl : ShipForcesInducer {
-    data class Gyro(
-        val position: Vector3i,
-        val tier: Double,
-        val be: BlockEntity,
-    )
+    data class Gyro(val position: Vector3i, val tier: Double, val be: BlockEntity)
 
-    private val gyros = ConcurrentLinkedQueue<Gyro>()
+    private val gyros = CopyOnWriteArrayList<Gyro>()
     private var targetRotation = Quaterniond()
     private var targetStrength = 1.0
 
@@ -37,8 +33,7 @@ class KontraptionGyroControl : ShipForcesInducer {
             val rotDif =
                 targetRotation
                     .mul(physShip.transform.shipToWorldRotation.invert(Quaterniond()), Quaterniond())
-                    .normalize()
-                    .invert()
+                    .normalize().invert()
 
             // Blackmagic ask triode
             val idealOmega = Vector3d(rotDif.x() * 2.0, rotDif.y() * 2.0, rotDif.z() * 2.0)
@@ -89,8 +84,9 @@ class KontraptionGyroControl : ShipForcesInducer {
     }
 
     companion object {
-        fun getOrCreate(ship: ServerShip): KontraptionGyroControl =
-            ship.getAttachment<KontraptionGyroControl>()
+        fun getOrCreate(ship: ServerShip): KontraptionGyroControl {
+            return ship.getAttachment<KontraptionGyroControl>()
                 ?: KontraptionGyroControl().also { ship.saveAttachment(it) }
+        }
     }
 }
