@@ -24,7 +24,6 @@ import net.illuc.kontraption.util.*
 import net.illuc.kontraption.util.KontraptionVSUtils.createNewShipWithBlocks
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
-import net.minecraft.server.commands.TeleportCommand
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.Mth
 import net.minecraft.world.InteractionHand
@@ -43,8 +42,9 @@ import java.awt.Color
 import kotlin.math.max
 import kotlin.math.min
 
-class ItemToolgun(properties: Properties) :
-    ItemEnergized(
+class ItemToolgun(
+    properties: Properties,
+) : ItemEnergized(
         KontraptionConfigs.kontraption.toolgunChargeRate,
         KontraptionConfigs.kontraption.toolgunStorage,
         properties.rarity(Rarity.UNCOMMON),
@@ -67,7 +67,8 @@ class ItemToolgun(properties: Properties) :
                 ClipContext(
                     (Vector3d(player.eyePosition.toJOML()).toMinecraft()),
                     (
-                        player.eyePosition.toJOML()
+                        player.eyePosition
+                            .toJOML()
                             .add(0.5, 0.5, 0.5)
                             .add(Vector3d(player.lookAngle.toJOML()).mul(10.0)) // distance
                     ).toMinecraft(),
@@ -175,13 +176,16 @@ class ItemToolgun(properties: Properties) :
                     }
                 }
 
-                val energyPerUse = KontraptionConfigs.kontraption.toolgunAssembleConsumption.get().multiply(set.size.toDouble())
+                val energyPerUse =
+                    KontraptionConfigs.kontraption.toolgunAssembleConsumption
+                        .get()
+                        .multiply(set.size.toDouble())
                 val energyContainer = StorageUtils.getEnergyContainer(player.getItemInHand(interactionHand), 0)
                 if (energyContainer == null || energyContainer.extract(energyPerUse, Action.SIMULATE, AutomationType.MANUAL).smallerThan(energyPerUse)) {
                     if (energyContainer != null) {
                         Mekanism.logger.info("Assembly failed! Not enough energy, $energyPerUse needed but had ${energyContainer.energy}")
                         player.sendSystemMessage(
-                            Component.literal("Assembly failed! Not enough energy, $energyPerUse needed but had ${energyContainer.energy}")
+                            Component.literal("Assembly failed! Not enough energy, $energyPerUse needed but had ${energyContainer.energy}"),
                         )
                     }
                 } else {
@@ -276,11 +280,12 @@ class ItemToolgun(properties: Properties) :
         ItemDataUtils.setInt(stack, NBTConstants.MODE, mode.ordinal)
     }
 
-    fun getMode(itemStack: ItemStack?): ToolgunMode {
-        return ToolgunMode.byIndexStatic(ItemDataUtils.getInt(itemStack, NBTConstants.MODE))
-    }
+    fun getMode(itemStack: ItemStack?): ToolgunMode = ToolgunMode.byIndexStatic(ItemDataUtils.getInt(itemStack, NBTConstants.MODE))
 
-    enum class ToolgunMode(private val langEntry: ILangEntry, private val color: EnumColor) : IHasTextComponent {
+    enum class ToolgunMode(
+        private val langEntry: ILangEntry,
+        private val color: EnumColor,
+    ) : IHasTextComponent {
         ASSEMBLE(KontraptionLang.ASSEMBLE, EnumColor.BRIGHT_GREEN),
         MOVE(KontraptionLang.MOVE, EnumColor.DARK_BLUE),
         LOCK(KontraptionLang.LOCK, EnumColor.RED),
@@ -289,20 +294,14 @@ class ItemToolgun(properties: Properties) :
         WELD(KontraptionLang.WELD, EnumColor.YELLOW),
         ;
 
-        override fun getTextComponent(): Component {
-            return langEntry.translateColored(color)
-        }
+        override fun getTextComponent(): Component = langEntry.translateColored(color)
 
-        fun byIndex(index: Int): ToolgunMode {
-            return byIndexStatic(index)
-        }
+        fun byIndex(index: Int): ToolgunMode = byIndexStatic(index)
 
         companion object {
             private val MODES = values()
 
-            fun byIndexStatic(index: Int): ToolgunMode {
-                return MathUtils.getByIndexMod(MODES, index)
-            }
+            fun byIndexStatic(index: Int): ToolgunMode = MathUtils.getByIndexMod(MODES, index)
         }
     }
 

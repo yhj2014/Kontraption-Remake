@@ -3,14 +3,11 @@ package net.illuc.kontraption.util
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.ClipContext
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
-import net.minecraft.world.phys.BlockHitResult
-import net.minecraft.world.phys.HitResult
 import net.minecraft.world.phys.Vec3
 import net.minecraftforge.items.ItemStackHandler
 import org.joml.Vector3d
@@ -97,7 +94,8 @@ object OttUtils {
         ship: ServerShip? = null,
         yawDegrees: Float = 0f,
         pitchDegrees: Float = 0f,
-        startOffset: Double = 0.7  // anything above like 2 would be a issue(cus dis aint a mortar)
+        startOffset: Double = 0.7,
+        // anything above like 2 would be a issue(cus dis aint a mortar)
     ): BlockPos? {
         val serverLevel = blockEntity.level as? ServerLevel ?: return null
 
@@ -110,40 +108,48 @@ object OttUtils {
         val relativeZ = cos(yawRad) * cos(pitchRad)
 
         // OUHC?? i hope i didnt make a mistake
-        val worldVec = when (facing) {
-            Direction.NORTH -> Vec3(-relativeX, relativeY, -relativeZ)
-            Direction.SOUTH -> Vec3(relativeX, relativeY, relativeZ)
-            Direction.WEST -> Vec3(-relativeZ, relativeY, relativeX)
-            Direction.EAST -> Vec3(relativeZ, relativeY, -relativeX)
-            Direction.UP -> Vec3(relativeX, relativeZ, relativeY)
-            Direction.DOWN -> Vec3(relativeX, -relativeZ, -relativeY)
-        }.normalize()
+        val worldVec =
+            when (facing) {
+                Direction.NORTH -> Vec3(-relativeX, relativeY, -relativeZ)
+                Direction.SOUTH -> Vec3(relativeX, relativeY, relativeZ)
+                Direction.WEST -> Vec3(-relativeZ, relativeY, relativeX)
+                Direction.EAST -> Vec3(relativeZ, relativeY, -relativeX)
+                Direction.UP -> Vec3(relativeX, relativeZ, relativeY)
+                Direction.DOWN -> Vec3(relativeX, -relativeZ, -relativeY)
+            }.normalize()
 
-        val startVec = Vec3.atCenterOf(start)
-            .add(Vec3.atLowerCornerOf(facing.normal).scale(startOffset))
+        val startVec =
+            Vec3
+                .atCenterOf(start)
+                .add(Vec3.atLowerCornerOf(facing.normal).scale(startOffset))
 
         val endVec = startVec.add(worldVec.scale(distance))
 
-        val (finalStart, finalEnd) = ship?.let {
-            transformVecForShip(startVec, endVec, it)
-        } ?: (startVec to endVec)
+        val (finalStart, finalEnd) =
+            ship?.let {
+                transformVecForShip(startVec, endVec, it)
+            } ?: (startVec to endVec)
 
-        return serverLevel.clip(
-            ClipContext(
-                finalStart,
-                finalEnd,
-                ClipContext.Block.COLLIDER,
-                ClipContext.Fluid.NONE,
-                null
-            )
-        ).blockPos
+        return serverLevel
+            .clip(
+                ClipContext(
+                    finalStart,
+                    finalEnd,
+                    ClipContext.Block.COLLIDER,
+                    ClipContext.Fluid.NONE,
+                    null,
+                ),
+            ).blockPos
     }
 
     // Stolen from TEConnector
-    fun getFacingDirection(blockState: BlockState) =
-        blockState.getValue(BlockStateProperties.FACING)
+    fun getFacingDirection(blockState: BlockState) = blockState.getValue(BlockStateProperties.FACING)
 
-    fun transformVecForShip(startVec: Vec3, endVec: Vec3, ship: ServerShip): Pair<Vec3, Vec3> {
+    fun transformVecForShip(
+        startVec: Vec3,
+        endVec: Vec3,
+        ship: ServerShip,
+    ): Pair<Vec3, Vec3> {
         val worldStartVec = ship.transform.shipToWorld.transformPosition(fV3V3d(startVec))
         val worldEndVec = ship.transform.shipToWorld.transformPosition(fV3V3d(endVec))
         return Pair(fV3dV3(worldStartVec), fV3dV3(worldEndVec))
@@ -174,7 +180,10 @@ object OttUtils {
         return dimshipID
     }
 
-    fun canInesrtItemStack(stack: ItemStack, inventory: ItemStackHandler): Boolean {
+    fun canInesrtItemStack(
+        stack: ItemStack,
+        inventory: ItemStackHandler,
+    ): Boolean {
         var remaining = stack.count
 
         for (i in 0 until inventory.slots) {
@@ -194,4 +203,3 @@ object OttUtils {
         return false
     }
 }
-

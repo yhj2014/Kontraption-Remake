@@ -14,7 +14,12 @@ import kotlin.math.max
 import kotlin.math.min
 
 class KontraptionThrusterControl : ShipForcesInducer {
-    data class Thruster(val position: Vector3i, val forceDirection: Vector3d, val forceStrength: Double, val thruster: ThrusterInterface)
+    data class Thruster(
+        val position: Vector3i,
+        val forceDirection: Vector3d,
+        val forceStrength: Double,
+        val thruster: ThrusterInterface,
+    )
 
     private val thrusters = CopyOnWriteArrayList<Thruster>()
 
@@ -23,9 +28,11 @@ class KontraptionThrusterControl : ShipForcesInducer {
     override fun applyForces(physShip: PhysShip) {
         physShip as PhysShipImpl
         physShip.applyInvariantForce(
-            physShip.poseVel.vel.negate(
-                Vector3d(),
-            ).mul(physShip.inertia.shipMass).mul(KontraptionConfigs.kontraption.dampeningStrength.get()),
+            physShip.poseVel.vel
+                .negate(
+                    Vector3d(),
+                ).mul(physShip.inertia.shipMass)
+                .mul(KontraptionConfigs.kontraption.dampeningStrength.get()),
         )
         thrusters.forEach {
             val (position, forceDirection, forceStrength, be) = it
@@ -104,9 +111,8 @@ class KontraptionThrusterControl : ShipForcesInducer {
     }
 
     companion object {
-        fun getOrCreate(ship: ServerShip): KontraptionThrusterControl {
-            return ship.getAttachment<KontraptionThrusterControl>()
+        fun getOrCreate(ship: ServerShip): KontraptionThrusterControl =
+            ship.getAttachment<KontraptionThrusterControl>()
                 ?: KontraptionThrusterControl().also { ship.saveAttachment(it) }
-        }
     }
 }

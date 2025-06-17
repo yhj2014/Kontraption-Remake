@@ -45,7 +45,6 @@ import org.joml.Vector3d
 import org.joml.Vector3dc
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.saveAttachment
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -292,22 +291,24 @@ class TileEntityShipControlInterface(
         return startRiding(player, force, blockPos, blockState, level as ServerLevel)
     }
 
-    public fun getRotation(): Map<String, Double> = (
-        mapOf(
-            Pair("x", rotTarget.x()),
-            Pair("y", rotTarget.y()),
-            Pair("z", rotTarget.z()),
-            Pair("w", rotTarget.w()),
+    public fun getRotation(): Map<String, Double> =
+        (
+            mapOf(
+                Pair("x", rotTarget.x()),
+                Pair("y", rotTarget.y()),
+                Pair("z", rotTarget.z()),
+                Pair("w", rotTarget.w()),
+            )
         )
-    )
 
-    public fun getMovement(): Map<String, Double> = (
-        mapOf(
-            Pair("x", velTarget.x()),
-            Pair("y", velTarget.y()),
-            Pair("z", velTarget.z()),
+    public fun getMovement(): Map<String, Double> =
+        (
+            mapOf(
+                Pair("x", velTarget.x()),
+                Pair("y", velTarget.y()),
+                Pair("z", velTarget.z()),
+            )
         )
-    )
 
     public fun getPosition(): Map<String, Double> {
         val a = ship!!.transform.positionInWorld

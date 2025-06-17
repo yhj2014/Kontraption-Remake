@@ -334,6 +334,7 @@ class Kontraption : IModModule {
                 output.accept(KontraptionBlocks.GYRO)
                 output.accept(KontraptionBlocks.CONNECTOR)
                 output.accept(KontraptionBlocks.KEY)
+                output.accept(KontraptionBlocks.DRILL)
                 output.accept(GlobalRegistry.Items.LARGE_ION_THRUSTER_CONTROLLER.get())
                 output.accept(GlobalRegistry.Items.LARGE_ION_THRUSTER_VALVE.get())
                 output.accept(GlobalRegistry.Items.LARGE_ION_THRUSTER_COIL.get())

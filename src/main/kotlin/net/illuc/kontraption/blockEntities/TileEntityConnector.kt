@@ -22,7 +22,6 @@ import net.minecraftforge.common.capabilities.Capability
 import net.minecraftforge.common.util.LazyOptional
 import net.minecraftforge.fml.ModList
 import org.joml.Vector3d
-import org.joml.Vector3dc
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.properties.ShipId
 import org.valkyrienskies.core.apigame.constraints.VSAttachmentConstraint
@@ -135,14 +134,14 @@ class TileEntityConnector(
         return Pair(tileEntity2c, ship2)
     }
 
-
-
     fun connectpass() {
         this.connect() // for some VERY WEIRD REASON, no matter if i use this weird passthru or normal .connect it CANNOT get tileEntity for some reason like WTF? Raycast gets correct possition(same as redstone eq) but doesnt get tileentity
     }
 
     fun connect() {
-        if (this.level?.isClientSide!!) {return}
+        if (this.level?.isClientSide!!) {
+            return
+        }
         var shipid2: ShipId?
         val getPaz = check()
         val (tileEntity2, ship2) = getPaz ?: Pair(null, null)
