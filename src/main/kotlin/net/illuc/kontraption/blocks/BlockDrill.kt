@@ -2,7 +2,6 @@ package net.illuc.kontraption.blocks
 
 import mekanism.common.block.prefab.BlockTile
 import mekanism.common.content.blocktype.BlockTypeTile
-import net.illuc.kontraption.blockEntities.TileEntityConnector
 import net.illuc.kontraption.blockEntities.TileEntityDrill
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.Level
@@ -22,7 +21,7 @@ class BlockDrill(
         oldState: BlockState,
         isMoving: Boolean,
     ) {
-        val be = world.getBlockEntity(pos) as TileEntityConnector
+        val be = world.getBlockEntity(pos) as TileEntityDrill
         be.enable()
         super.onPlace(state, world, pos, oldState, isMoving)
     }

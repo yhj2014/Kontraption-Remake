@@ -140,11 +140,11 @@ class LiquidFuelThrusterMultiblockData(
         val toBurn = thrusterPower * KontraptionConfigs.kontraption.liquidFuelConsumption.get() // Math.min(Math.min(1.0, storedFuel), fuelAssemblies * MekanismGeneratorsConfig.generators.burnPerAssembly.get())
         storedFuel -= toBurn
         if (storedFuel <= 0.0) {
-            if (enabled == true) {
+            if (enabled) {
                 disable()
             }
         } else {
-            if (enabled == false) {
+            if (!enabled) {
                 enable()
             }
         }

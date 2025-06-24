@@ -35,8 +35,8 @@ class TileEntityDrill(
         const val INVENTORY_SIZE: Int = 27 // perchance more
         private const val DRILL_RADIUS: Double = 10.0
         private const val DRILL_DELAY: Int = 40 // do i hear UPGRADES?
-        private const val DRILL_SWEEP_ANGLE: Int = 15 // Dis goes in both ways soo its 2x for total rad
-        var tool: ItemStack = ItemStack(Items.NETHERITE_PICKAXE)
+        private const val DRILL_SWEEP_ANGLE: Int = 20 // Dis goes in both ways soo its 2x for total rad
+        var tool: ItemStack = ItemStack(Items.NETHERITE_PICKAXE) // ABOVE SHOULD NEVER BE IN CONFIG(imagine user setting range to 400 and sweep to 300 by accident
     }
 
     private var tickCT = 0
@@ -116,6 +116,7 @@ class TileEntityDrill(
         }
     }
 
+    // APARENTLY SOME MORONS DONT USE TAGS!!! LIKE WHY
     private fun isMinable(block: Block): Boolean {
         val state = block.defaultBlockState()
         return state.`is`(BlockTags.MINEABLE_WITH_PICKAXE) ||
@@ -144,4 +145,6 @@ class TileEntityDrill(
             )
         }
     }
+
+    fun enable() {}
 }

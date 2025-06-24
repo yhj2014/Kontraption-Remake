@@ -19,7 +19,7 @@ interface ThrusterInterface {
 
     fun enable() {
         if (thrusterLevel !is ServerLevel) return
-        println("ENABLED")
+        //  println("ENABLED")
         enabled = true
         if (worldPosition != null) {
             val ship =
@@ -42,7 +42,7 @@ interface ThrusterInterface {
     }
 
     fun disable() {
-        println("DISABLED THRUSTER INTERFACE") // was wondering tf dis doin
+        // println("DISABLED THRUSTER INTERFACE") // was wondering tf dis doin
         if (thrusterLevel !is ServerLevel) return
 
         enabled = false

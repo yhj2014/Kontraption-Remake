@@ -127,11 +127,11 @@ class TileEntityShipControlInterface(
         val ship = this.ship ?: return
 
         seatedControllingPlayer = ship.getAttachment(KontraptionSeatedControllingPlayer::class.java) ?: return
-        if (seats.size != 0) {
-            if (seats[0].passengers.size != 0) {
+        if (seats.isNotEmpty()) {
+            if (seats[0].passengers.isNotEmpty()) {
                 velTarget = Vector3d(seatedControllingPlayer!!.forwardImpulse, seatedControllingPlayer!!.upImpulse, seatedControllingPlayer!!.leftImpulse)
-                if (seatedControllingPlayer!!.openConfig == true) {
-                    var player = entity.controllingPassenger as ServerPlayer
+                if (seatedControllingPlayer!!.openConfig) {
+                    val player = entity.controllingPassenger as ServerPlayer
                     val posKeystones = getKeystones().map { it.position.toBlockPos() }
                     val bindKeyStones =
                         posKeystones.map { blockPos ->

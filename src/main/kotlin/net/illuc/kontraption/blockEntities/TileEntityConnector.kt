@@ -46,17 +46,16 @@ class TileEntityConnector(
     override fun <T> getCapability(
         capability: Capability<T>,
         side: Direction?,
-    ): LazyOptional<T> {
+    ): LazyOptional<T> =
         if (ModList.get().isLoaded("computercraft")) {
             if (capability == Capabilities.CAPABILITY_PERIPHERAL as Capability<T>) {
-                return peripheralCapability as LazyOptional<T>
+                peripheralCapability as LazyOptional<T>
             } else {
-                return super.getCapability(capability, side)
+                super.getCapability(capability, side)
             }
         } else {
-            return super.getCapability(capability, side)
+            super.getCapability(capability, side)
         }
-    }
 
     fun enable() {
         // as ceo intended

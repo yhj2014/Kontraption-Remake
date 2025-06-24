@@ -159,6 +159,14 @@ repositories {
         }
     }
 
+    maven {
+        name = "Modrinth Maven"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup("maven.modrinth")
+        }
+    }
+
 
 
     maven {
@@ -210,6 +218,11 @@ dependencies {
     implementation "org.joml:joml:1.10.5"
     implementation "com.fasterxml.jackson.core:jackson-annotations:2.13.3"
     implementation 'thedarkcolour:kotlinforforge:4.11.0'
+    //DEBUG
+    implementation fg.deobf("curse.maven:stitch-841890:5176879")
+    implementation fg.deobf("maven.modrinth:cosmic-horizons-cosmos:0.0.7.3")//Required for compilation but not used as depp
+    implementation fg.deobf("curse.maven:starlance-1130106:6419355")
+    //DEBUG
     compileOnly fg.deobf("curse.maven:cc-tweaked-282001:5379173")
     implementation fg.deobf("curse.maven:cc-tweaked-282001:5379173")
 
