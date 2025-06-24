@@ -89,7 +89,8 @@ class StructReq(
                 Triple(0.0, 0.0, 1.0),
                 Triple(1.0, 0.0, 1.0),
                 Triple(1.0, 1.0, 1.0),
-                Triple(0.0, 1.0, 1.0), // easiest one
+                Triple(0.0, 1.0, 1.0), 
+                // easiest one
             )
         val edges =
             arrayOf(
