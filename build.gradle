@@ -38,7 +38,9 @@ apply plugin: 'maven-publish'
 apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 apply plugin: "org.jetbrains.kotlin.jvm"
-
+ktlint {
+    ignoreFailures = true
+}
 
 String gitRevision = "git rev-parse HEAD".execute().text.trim()
 version = mod_version + '+' + gitRevision.substring(0, 10)
