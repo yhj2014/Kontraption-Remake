@@ -11,6 +11,7 @@ import it.zerono.mods.zerocore.lib.multiblock.cuboid.AbstractCuboidMultiblockCon
 import it.zerono.mods.zerocore.lib.multiblock.validation.IMultiblockValidator
 import net.illuc.kontraption.GlobalRegistry
 import net.illuc.kontraption.ThrusterInterface
+import net.illuc.kontraption.config.KontraptionConfigs
 import net.illuc.kontraption.multiblocks.largeionring.parts.AbstractRingEntity
 import net.illuc.kontraption.util.*
 import net.minecraft.core.BlockPos
@@ -45,6 +46,8 @@ open class LargeIonRingMultiBlock(
     val areaBIG = (sizeX * sizeZ) * 2
     val areaSMALL = ((sizeX - 2) * (sizeZ - 2)) * 2
     var controller: AbstractRingEntity? = null
+
+    // ---- THRUSTER BS ------
     override var enabled = true
     override var thrusterLevel: Level? = world
     override var worldPosition: BlockPos? = center
@@ -52,6 +55,8 @@ open class LargeIonRingMultiBlock(
     override var powered: Boolean = true
     override var thrusterPower: Double = 100.0
     override val basePower: Double = 100.0
+    override var currentThrust: Double = 0.0
+    // ----------------
 
     // energy settings
     private val ENERGY_CAPACITY: Double = 10000000.0
@@ -103,6 +108,14 @@ open class LargeIonRingMultiBlock(
     }
 
     fun getEnergyStorage(): IWideEnergyStorage = this.energyInputHandler
+
+    fun addToShip() {
+        ship = KontraptionVSUtils.getShipObjectManagingPos((thrusterLevel as ServerLevel), centerExhaust)
+            ?: KontraptionVSUtils.getShipManagingPos((thrusterLevel as ServerLevel), centerExhaust)
+        if (ship != null) {
+            controller?.let { enable(thrusterLevel as ServerLevel, it.position) } // I would prefer to just rerun assembly tho soo thats a thing to look into
+        }
+    }
 
     override fun onPartAdded(p0: IMultiblockPart<LargeIonRingMultiBlock>) {
         // println("added part to ION RING")
@@ -157,7 +170,7 @@ open class LargeIonRingMultiBlock(
 
     override fun updateServer(): Boolean {
         if (powered) {
-            burnFuel(thrusterLevel as Level)
+            burnFuel()
         } else {
             lastBurnRate = 0.0
         }
@@ -172,7 +185,7 @@ open class LargeIonRingMultiBlock(
                     }
             }
         }
-        if (controller != null) controller?.setEnabledd(enabled)
+        if (controller != null) controller?.setEnabledd(enabled && powered)
         return true
     }
 
@@ -257,27 +270,30 @@ open class LargeIonRingMultiBlock(
                         .mul(1.5),
                 ).toMinecraft()
         pos = centerExhaust.offset(exhaustDirection.normal.multiply(1))
-        thrusterPower = (100.0 * innerVolume)
+        thrusterPower = (innerVolume * KontraptionConfigs.kontraption.largeIonThrust.get())
         if (ship != null) {
             thrusterLevel = world
-            worldPosition = center
+            if (controller != null) {
+                worldPosition = controller!!.position
+            }
             forceDirection = exhaustDirection.opposite
-            enable()
+            controller?.let { enable(thrusterLevel as ServerLevel, it.position) }
         }
     }
 
-    private fun burnFuel(world: Level) {
-        val toBurn = (thrusterPower * 100).toInt()
+    private fun burnFuel() {
+        val pwrPrc = currentThrust / thrusterPower
+        val toBurn = KontraptionConfigs.kontraption.largeIonEnergyConsumption.get() * pwrPrc
 
         if (energyStorage.energyStored >= toBurn) {
-            energyStorage.extractEnergy(EnergySystem.ForgeEnergy, toBurn.toDouble(), false)
+            energyStorage.extractEnergy(EnergySystem.ForgeEnergy, toBurn, false)
             if (!enabled) enable()
         } else {
             if (enabled) disable()
         }
 
-        burnRemaining = energyStorage.energyStored.toDouble() % 1
-        lastBurnRate = toBurn.toDouble()
+        burnRemaining = energyStorage.energyStored % 1
+        lastBurnRate = toBurn
     }
 
     override fun isMachineWhole(validatorCallback: IMultiblockValidator): Boolean {
