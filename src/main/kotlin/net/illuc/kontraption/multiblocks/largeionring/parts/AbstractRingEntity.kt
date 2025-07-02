@@ -21,7 +21,7 @@ import net.minecraft.world.level.block.state.BlockState
 
 abstract class AbstractRingEntity(
     type: BlockEntityType<*>,
-    position: BlockPos,
+    var position: BlockPos,
     blockState: BlockState,
 ) : AbstractMultiblockEntity<LargeIonRingMultiBlock>(type, position, blockState),
     IMultiblockPartTypeProvider<LargeIonRingMultiBlock, IIonRingPartType> {

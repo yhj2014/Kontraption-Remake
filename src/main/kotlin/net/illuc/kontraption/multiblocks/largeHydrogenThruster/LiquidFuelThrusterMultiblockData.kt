@@ -54,7 +54,7 @@ class LiquidFuelThrusterMultiblockData(
     override var powered: Boolean = true
     override var thrusterPower: Double = KontraptionConfigs.kontraption.liquidFuelThrust.get()
     override val basePower: Double = KontraptionConfigs.kontraption.liquidFuelThrust.get()
-
+    override var currentThrust: Double = 0.0
     // ----------------stuff-----------------------
 
     var gasTank: IGasTank? = null
@@ -137,7 +137,8 @@ class LiquidFuelThrusterMultiblockData(
     private fun burnFuel(world: Level) {
         val lastBurnRemaining: Double = burnRemaining
         var storedFuel: Double = gasTank!!.stored + burnRemaining
-        val toBurn = thrusterPower * KontraptionConfigs.kontraption.liquidFuelConsumption.get() // Math.min(Math.min(1.0, storedFuel), fuelAssemblies * MekanismGeneratorsConfig.generators.burnPerAssembly.get())
+        val powerPerc = currentThrust / thrusterPower
+        val toBurn = thrusterPower * KontraptionConfigs.kontraption.liquidFuelConsumption.get() * powerPerc // Math.min(Math.min(1.0, storedFuel), fuelAssemblies * MekanismGeneratorsConfig.generators.burnPerAssembly.get())
         storedFuel -= toBurn
         if (storedFuel <= 0.0) {
             if (enabled) {
