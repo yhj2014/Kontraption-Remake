@@ -64,6 +64,10 @@ class TileEntityShipControlInterface(
     private val seats = mutableListOf<KontraptionShipMountingEntity>()
     private val logger = LogUtils.getLogger()
 
+    // ---- GOOD GOD REMEMBER TO CHAGE THIS TO DIM SPECYFIC GRAVITY ON 2.5 VS TODO: DO ITT MF
+    private final var GRAVITY_STAT = Vector3d(0.0, -10.0, 0.0) // so nobody gets weird ideas
+    //
+
     private var rotTarget = Quaterniond()
     private var velTarget = Vector3d()
 
@@ -409,5 +413,32 @@ class TileEntityShipControlInterface(
         rotTarget.mul(tmp)
         tmp.fromAxisAngleRad(Vector3d(0.0, 1.0, 0.0), y * 0.1)
         rotTarget.mul(tmp)
+    }
+
+    fun preciseThrustImpulse(
+        x: Double,
+        y: Double,
+        z: Double,
+    ) {
+        val requestedThrust = mutableMapOf<Vector3d, Double>()
+
+        if (x > 0) {
+            requestedThrust[direction.opposite.normal.toJOMLD()] = x
+        } else if (x < 0) {
+            requestedThrust[direction.normal.toJOMLD()] = -x
+        }
+        if (y > 0) {
+            requestedThrust[Direction.UP.normal.toJOMLD()] = y
+        } else if (y < 0) {
+            requestedThrust[Direction.DOWN.normal.toJOMLD()] = -y
+        }
+        if (z > 0) {
+            requestedThrust[direction.counterClockWise.normal.toJOMLD()] = z
+        } else if (z < 0) {
+            requestedThrust[direction.clockWise.normal.toJOMLD()] = -z
+        }
+        val ship = this.ship ?: return
+        val thrusters = KontraptionThrusterControl.getOrCreate(ship)
+        thrusters.assignThrustPerDirection(requestedThrust, false)
     }
 }
