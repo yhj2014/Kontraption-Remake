@@ -13,14 +13,14 @@ import net.illuc.kontraption.entity.KontraptionShipMountingEntity
 import net.illuc.kontraption.events.KeyBindEvent
 import net.illuc.kontraption.gui.ShipTerminalMenu
 import net.illuc.kontraption.peripherals.ShipControlInterfacePeripheral
+import net.illuc.kontraption.ship.KontraptionBConfigControl
 import net.illuc.kontraption.ship.KontraptionGyroControl
-import net.illuc.kontraption.ship.KontraptionKeyBlockControl
 import net.illuc.kontraption.ship.KontraptionThrusterControl
 import net.illuc.kontraption.util.ByteUtils
 import net.illuc.kontraption.util.KontraptionVSUtils.getShipObjectManagingPos
-import net.illuc.kontraption.util.toBlockPos
 import net.illuc.kontraption.util.toDoubles
 import net.illuc.kontraption.util.toJOMLD
+import net.illuc.kontraption.util.writeConfigBlocks
 import net.minecraft.commands.arguments.EntityAnchorArgument
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -126,7 +126,7 @@ class TileEntityShipControlInterface(
         return entity
     }
 
-    fun getKeystones(): CopyOnWriteArrayList<KontraptionKeyBlockControl.KeyStone> = KontraptionKeyBlockControl.getOrCreate(this.ship!!).getKeystones()
+    fun getConfigBlocks(): CopyOnWriteArrayList<KontraptionBConfigControl.ConfigBlock> = KontraptionBConfigControl.getOrCreate(this.ship!!).getConfigBlock()
 
     fun tick() {
         val ship = this.ship ?: return
@@ -137,11 +137,7 @@ class TileEntityShipControlInterface(
                 velTarget = Vector3d(seatedControllingPlayer!!.forwardImpulse, seatedControllingPlayer!!.upImpulse, seatedControllingPlayer!!.leftImpulse)
                 if (seatedControllingPlayer!!.openConfig) {
                     val player = entity.controllingPassenger as ServerPlayer
-                    val posKeystones = getKeystones().map { it.position.toBlockPos() }
-                    val bindKeyStones =
-                        posKeystones.map { blockPos ->
-                            (level!!.getBlockEntity(blockPos) as TileEntityKey).getsetKeybind(false)
-                        }
+                    val configBlocks = getConfigBlocks()
                     val menuProvider =
                         object : MenuProvider {
                             override fun getDisplayName(): Component = Component.translatable("container." + Kontraption.MODID + ".TerminalGUI")
@@ -153,15 +149,14 @@ class TileEntityShipControlInterface(
                             ): AbstractContainerMenu {
                                 val buf =
                                     FriendlyByteBuf(Unpooled.buffer()).apply {
-                                        writeCollection(posKeystones, FriendlyByteBuf::writeBlockPos)
-                                        writeCollection(bindKeyStones, FriendlyByteBuf::writeInt)
+                                        writeConfigBlocks(configBlocks)
                                     }
                                 return ShipTerminalMenu(windowId, playerInventory, buf)
                             }
                         }
+
                     NetworkHooks.openScreen(player, menuProvider) { buf ->
-                        buf.writeCollection(posKeystones, FriendlyByteBuf::writeBlockPos)
-                        buf.writeCollection(bindKeyStones, FriendlyByteBuf::writeInt)
+                        buf.writeConfigBlocks(configBlocks)
                     }
                 }
                 // pART 3
@@ -186,46 +181,6 @@ class TileEntityShipControlInterface(
 
         val thrusters = KontraptionThrusterControl.getOrCreate(ship)
         val gyros = KontraptionGyroControl.getOrCreate(ship)
-
-        /* thrusters.thrusterControlAll(
-            this.direction.normal.toJOMLD(),
-            // -seatedControllingPlayer?.forwardImpulse!!.toDouble()
-            -velTarget.x,
-        )
-
-        thrusters.thrusterControlAll(
-            this.direction.opposite.normal
-                .toJOMLD(),
-            // seatedControllingPlayer?.forwardImpulse!!.toDouble(),
-            velTarget.x,
-        )
-
-        thrusters.thrusterControlAll(
-            Direction.UP.normal.toJOMLD(),
-            // seatedControllingPlayer?.upImpulse!!.toDouble()
-            velTarget.y,
-        )
-
-        thrusters.thrusterControlAll(
-            Direction.DOWN.normal.toJOMLD(),
-            // -seatedControllingPlayer?.upImpulse!!.toDouble()
-            -velTarget.y,
-        )
-
-        thrusters.thrusterControlAll(
-            this.direction.counterClockWise.normal
-                .toJOMLD(),
-            // seatedControllingPlayer?.leftImpulse!!.toDouble()
-            velTarget.z,
-        )
-
-        thrusters.thrusterControlAll(
-            this.direction.clockWise.normal
-                .toJOMLD(),
-            // -seatedControllingPlayer?.leftImpulse!!.toDouble()
-            -velTarget.z,
-        )// OLD IMPE
-*/
         val requestedThrust = mutableMapOf<Vector3d, Double>()
 
         if (velTarget.x > 0) {

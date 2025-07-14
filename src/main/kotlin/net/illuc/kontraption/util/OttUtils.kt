@@ -86,6 +86,22 @@ object OttUtils {
             }
         }
 
+    /**
+     * Performs a ray trace (line-of-sight/block intersection) from a given block position and orientation.
+     *
+     * @param distance      The length (in blocks) of the ray trace.
+     * @param blockEntity   The BlockEntity from whose world/level the operation is performed.
+     * @param start         The BlockPos to start tracing from (the origin/block center).
+     * @param facing        The base Direction the trace is aligned to.
+     * @param ship          (Optional) The ServerShip context for performing ship-to-world transformations.
+     * @param yawDegrees    (Optional) Rotation (in degrees) around the Y axis (left/right), relative to the facing direction. Default: 0.
+     * @param pitchDegrees  (Optional) Rotation (in degrees) around the X axis (up/down tilt). Default: 0.
+     * @param startOffset   (Optional) How far from the starting block along the facing direction to begin the trace (in blocks). Default: 0.7.
+     *
+     * @return The first BlockPos hit by the ray, or null if nothing is hit within the given distance.
+     */
+    // I def didnt use AI to get param :3
+
     fun rayTrace(
         distance: Double,
         blockEntity: BlockEntity,
