@@ -126,7 +126,7 @@ class TileEntityShipControlInterface(
         return entity
     }
 
-    fun getConfigBlocks(): CopyOnWriteArrayList<KontraptionBConfigControl.ConfigBlock> = KontraptionBConfigControl.getOrCreate(this.ship!!).getConfigBlock()
+    fun getConfigBlocks(): CopyOnWriteArrayList<KontraptionBConfigControl.ConfigBlock> = KontraptionBConfigControl.getOrCreate(this.ship!!).allConfigBlock()
 
     fun tick() {
         val ship = this.ship ?: return

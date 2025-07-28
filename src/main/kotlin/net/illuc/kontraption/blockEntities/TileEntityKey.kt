@@ -12,7 +12,6 @@ import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.state.BlockState
-import java.lang.Math.random
 
 class TileEntityKey(
     pos: BlockPos?,

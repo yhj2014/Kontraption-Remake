@@ -99,11 +99,10 @@ class ShipTerminalScreen(
                     is KontraptionBConfigControl.BlockSetting.BooleanSetting -> 0xFF00BB00.toInt()
                     is KontraptionBConfigControl.BlockSetting.IntSetting -> 0xFF5694E3.toInt()
                     is KontraptionBConfigControl.BlockSetting.StringSetting -> 0xFFAA22DD.toInt()
-                    is KontraptionBConfigControl.BlockSetting.TittleSetting -> 0xFFFFC401.toInt()
                 }
 
             GG.fill(left + gap, y, left + width - gap, y + boxHeight, boxColor)
-            GG.drawString(font, "${setting.name}: ${setting.displayValue}", left + gap + 6, y + 8, 0x222222)
+            GG.drawString(font, "${setting.name}: ${setting.value}", left + gap + 6, y + 8, 0x222222)
         }
     }
 
