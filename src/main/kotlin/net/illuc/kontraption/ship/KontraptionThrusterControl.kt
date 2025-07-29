@@ -1,5 +1,6 @@
 package net.illuc.kontraption.ship
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import net.illuc.kontraption.ThrusterInterface
 import net.illuc.kontraption.config.KontraptionConfigs
 import net.illuc.kontraption.util.toJOML
@@ -12,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.max
 import kotlin.math.min
 
+@JsonIgnoreProperties(ignoreUnknown = true) // FOR MY SANITY
 class KontraptionThrusterControl : ShipForcesInducer {
     data class Thruster(
         val position: Vector3i,

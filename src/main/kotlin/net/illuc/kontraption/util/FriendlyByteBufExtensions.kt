@@ -10,6 +10,7 @@ fun FriendlyByteBuf.writeConfigBlocks(blocks: List<ConfigBlock>) {
     writeVarInt(blocks.size)
     for (block in blocks) {
         writeBlockPos(block.pos.toBlockPos())
+        writeUtf(block.blockId)
         writeVarInt(block.settings.size)
 
         for (setting in block.settings) {
@@ -39,6 +40,7 @@ fun FriendlyByteBuf.readConfigBlocks(): List<ConfigBlock> {
 
     repeat(count) {
         val pos = readBlockPos()
+        val blockId = readUtf()
         val settingsCount = readVarInt()
         val settings = mutableListOf<BlockSetting<*>>()
 
@@ -57,7 +59,7 @@ fun FriendlyByteBuf.readConfigBlocks(): List<ConfigBlock> {
             settings.add(setting)
         }
 
-        blocks.add(ConfigBlock(pos.toJOML(), settings))
+        blocks.add(ConfigBlock(pos.toJOML(), settings, blockId))
     }
 
     return blocks

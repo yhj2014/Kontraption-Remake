@@ -55,6 +55,7 @@ class KontraptionBConfigControl {
         constructor(
             @JsonProperty("pos") val pos: Vector3i,
             @JsonProperty("settings") val settings: MutableList<BlockSetting<*>>,
+            @JsonProperty("blockId") val blockId: String,
         )
 
     private val blockSettings = CopyOnWriteArrayList<ConfigBlock>()
@@ -64,7 +65,8 @@ class KontraptionBConfigControl {
         blockEntity: BlockEntity?,
         settings: List<BlockSetting<*>>,
     ) {
-        blockSettings.add(ConfigBlock(pos.toJOML(), settings.toMutableList()))
+        val blockId = blockEntity?.blockState?.block?.descriptionId ?: "unknown"
+        blockSettings.add(ConfigBlock(pos.toJOML(), settings.toMutableList(), blockId))
     }
 
     fun removeConfigBlock(pos: BlockPos) {
