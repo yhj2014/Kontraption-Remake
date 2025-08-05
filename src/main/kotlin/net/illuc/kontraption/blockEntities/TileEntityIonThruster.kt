@@ -23,12 +23,12 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.state.BlockState
 import javax.annotation.Nonnull
 
-// class TileEntityIonThruster(pos: BlockPos?, state: BlockState?) : TileEntityMekanism(KontraptionBlocks.ION_THRUSTER, pos, state) {
 class TileEntityIonThruster(
     pos: BlockPos?,
     state: BlockState?,
 ) : TileEntityMekanism(KontraptionBlocks.ION_THRUSTER, pos, state),
     ThrusterInterface {
+    // TODO: TOUCH THIS MF
     override var enabled = false
     override var thrusterLevel: Level? = null
     override val worldPosition: BlockPos? = pos
