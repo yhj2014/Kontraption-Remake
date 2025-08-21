@@ -1,7 +1,13 @@
+@file:Suppress("LocalVariableName", "PrivatePropertyName") // *cough* Intelij can go fuck itself with my val names
+
 package net.illuc.kontraption.gui
 
 import net.illuc.kontraption.Kontraption
+import net.illuc.kontraption.network.to_server.PacketKontraptionScreen
 import net.illuc.kontraption.ship.KontraptionBConfigControl
+import net.illuc.kontraption.util.guiutils.SliderButton
+import net.illuc.kontraption.util.guiutils.TextField
+import net.illuc.kontraption.util.guiutils.ToggleButton
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
@@ -11,6 +17,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 import net.minecraftforge.registries.ForgeRegistries
+import org.lwjgl.glfw.GLFW
 
 class ShipTerminalScreen(
     private val menz: ShipTerminalMenu,
@@ -26,52 +33,108 @@ class ShipTerminalScreen(
     private val TEXTDIM = 0xFFa0a0a8.toInt()
 
     // Sizings and offsets
-    private val BLOCKHEIGHT = 24
-    private val VERTICALGAP = 4
-    private val SIDEGAP = 6
-    private val ICONSIZE = 16
-    private var RIGHTOFFET = 5
-    private var TEXTPOSOFF = 12
-    private val BGPADDING = 15
-    private val BTNOFFSET = 20
+    private val BLOCKHEIGHT = 45
+    private val VERTICALGAP = 5
+    private val SIDEGAP = 15
+    private val ICONSIZE = 40
+    private var RIGHTOFFET = 12
+    private var TEXTPOSOFF = 30
+    private val BGPADDING = 38
+    private val BTNOFFSET = 50
+    private val searchHeight = 30
 
     private val buttonMap = mutableListOf<Button>()
-    private var selectedBlockInd = 0
+
+    // Btn maps
+    private val toggleButtons = mutableMapOf<KontraptionBConfigControl.BlockSetting.BooleanSetting, ToggleButton>()
+    private val sliderButtons = mutableMapOf<KontraptionBConfigControl.BlockSetting.IntSetting, SliderButton>()
     private val buttonBlockMap = mutableMapOf<Button, KontraptionBConfigControl.ConfigBlock>()
+    private val textFields = mutableMapOf<KontraptionBConfigControl.BlockSetting.StringSetting, TextField>()
+
+    private lateinit var blockListPanel: net.illuc.kontraption.util.guiutils.ListPanel
+
+    private var selectedBlockInd = 0
+
+    private var currentSettingsBlock: KontraptionBConfigControl.ConfigBlock? = null
+    private lateinit var saveButton: Button
 
     override fun init() {
         super.init()
-        this.imageWidth = 360
-        this.imageHeight = 220
+        this.imageWidth = 900
+        this.imageHeight = 550
         this.leftPos = (width - imageWidth) / 2
         this.topPos = (height - imageHeight) / 2
-
         this.inventoryLabelY = 10000
-
         buttonMap.clear()
         children().removeIf { it is Button }
-
         val listPanelWidth = (imageWidth * 0.45).toInt()
+        val listPanelHeight = imageHeight - 50 // DIS IS PADDING, TOO LAZY TO YEET INTO VARS
+        val panelX = leftPos
+        val panelY = topPos + 40
+
+        // WOHOO BUILDER!!
+        blockListPanel =
+            net.illuc.kontraption.util.guiutils.ListPanel
+                .Builder(panelX, panelY, listPanelWidth, listPanelHeight)
+                .padding(10)
+                .backgroundColor(PANELBG)
+                .borderColor(PANELBORDER)
+                .scrollbar(true)
+                .searchable(true)
+                .searchBarHeight(searchHeight)
+                .build()
+
         val blocks = menz.configBlocks
-
         for ((i, block) in blocks.withIndex()) {
-            val y = topPos + i * (BLOCKHEIGHT + VERTICALGAP) + VERTICALGAP + BTNOFFSET
-            val blockName = Component.translatable(block.blockId).string
-
-            val buttonX = leftPos + SIDEGAP
-            val buttonWidth = listPanelWidth - 2 * SIDEGAP
-
+            val customName =
+                block.settings
+                    .filterIsInstance<KontraptionBConfigControl.BlockSetting.StringSetting>()
+                    .firstOrNull { it.name == "name" }
+                    ?.value
+            val blockName = customName?.takeIf { it.isNotBlank() } ?: Component.translatable(block.blockId).string
             val btn =
                 Button
                     .builder(Component.literal(blockName)) {
                         selectedBlockInd = i
-                    }.bounds(buttonX, y, buttonWidth, BLOCKHEIGHT)
+                    }.bounds(0, 0, listPanelWidth - 12, BLOCKHEIGHT) // Bounds are shifted by le listpan, may fight with scallable btn
                     .build()
 
+            blockListPanel.addChild(btn, SIDEGAP, i * (BLOCKHEIGHT + VERTICALGAP))
             buttonMap.add(btn)
             buttonBlockMap[btn] = block
-            addRenderableWidget(btn)
         }
+        addRenderableWidget(blockListPanel)
+        saveButton =
+            Button
+                .builder(Component.literal("SAVE SETTINGS")) {
+                    val blk = menz.configBlocks.getOrNull(selectedBlockInd) ?: return@builder
+                    val updatedSettings: MutableList<KontraptionBConfigControl.BlockSetting<*>> =
+                        blk.settings
+                            .map {
+                                when (it) {
+                                    is KontraptionBConfigControl.BlockSetting.BooleanSetting ->
+                                        KontraptionBConfigControl.BlockSetting.BooleanSetting(it.name, it.value)
+                                    is KontraptionBConfigControl.BlockSetting.IntSetting ->
+                                        KontraptionBConfigControl.BlockSetting.IntSetting(it.name, it.value, it.maxVal, it.minVal, it.scaled) // we dont need to send it all back? but idk how to do it other way
+                                    is KontraptionBConfigControl.BlockSetting.StringSetting ->
+                                        KontraptionBConfigControl.BlockSetting.StringSetting(it.name, it.value)
+                                }
+                            }.toMutableList()
+
+                    val updatedBlock = KontraptionBConfigControl.ConfigBlock(blk.pos, updatedSettings, blk.blockId)
+                    Kontraption.packetHandler().sendToServer(PacketKontraptionScreen(updatedBlock))
+                    val newName =
+                        updatedSettings
+                            .filterIsInstance<KontraptionBConfigControl.BlockSetting.StringSetting>()
+                            .firstOrNull { it.name == "name" }
+                            ?.value
+                            ?.takeIf { it.isNotBlank() }
+                            ?: Component.translatable(blk.blockId).string
+                    buttonMap.getOrNull(selectedBlockInd)?.message = Component.literal(newName) // sketchy and is getting 100% replaced with proper button class xd
+                }.bounds(panelX + SIDEGAP, panelY + imageHeight - 30, 100, 20)
+                .build()
+
+        addRenderableWidget(saveButton)
     }
 
     override fun render(
@@ -85,7 +148,7 @@ class ShipTerminalScreen(
         val bgX2 = leftPos + imageWidth + BGPADDING
         val bgY2 = topPos + imageHeight + BGPADDING
 
-// Draw translucent black background just behind GUI area
+// Still no clue how to do itt properlyyy, gonna steal from chest gui laterr
         GG.fill(bgX1, bgY1, bgX2, bgY2, DARKBG)
 
         renderBlockListPanel(GG)
@@ -93,40 +156,117 @@ class ShipTerminalScreen(
 
         super.render(GG, mouseX, mouseY, partialTicks) // Should be here i think?
 
-        for (button in buttonMap) {
+        for (child in blockListPanel.getFilteredChildren()) {
+            val button = child.widget
             val block = buttonBlockMap[button] ?: continue
-            Kontraption.LOGGER.debug(block.blockId)
-            val blockItem = ForgeRegistries.BLOCKS.getValue(ResourceLocation(block.blockId))?.asItem() ?: continue // NEVER WORKS, TIME FOR LE DEBBUGER
-            Kontraption.LOGGER.debug(blockItem)
+
+            val (absX, absY) = blockListPanel.getChildScreenPos(child) // bleh i had to change how list panel works, while changing how highligh works remember about offset
+
+            val blockItem = ForgeRegistries.BLOCKS.getValue(ResourceLocation(block.blockId))?.asItem() ?: continue
             val iconStack = ItemStack(blockItem)
-            val iconX = button.x + 4
-            val iconY = button.y + (button.height - ICONSIZE) / 2
-            GG.renderItem(iconStack, iconX, iconY)
+            GG.renderItem(iconStack, absX + 4, absY + (button.height - ICONSIZE) / 2)
+            val (clipX1, clipY1, clipX2, clipY2) =
+                listOf(
+                    blockListPanel.innerLeft() - 2,
+                    blockListPanel.innerTop(),
+                    blockListPanel.innerLeft() + blockListPanel.innerWidth(),
+                    blockListPanel.innerTop() + blockListPanel.innerHeight(),
+                )
+
+            GG.enableScissor(clipX1, clipY1 + (searchHeight / 2) + 2, clipX2, clipY2)
 
             if (button == buttonMap.getOrNull(selectedBlockInd)) {
-                GG.fill(button.x, button.y, button.x + button.width, button.y + button.height, 0x667a3da5)
-                GG.hLine(button.x, button.x + button.width - 1, button.y, ACCENTCOLOR)
-                GG.hLine(button.x, button.x + button.width - 1, button.y + button.height - 1, ACCENTCOLOR)
-                GG.vLine(button.x, button.y, button.y + button.height, ACCENTCOLOR)
-                GG.vLine(button.x + button.width - 1, button.y, button.y + button.height, ACCENTCOLOR)
+                GG.fill(absX, absY, absX + button.width, absY + button.height, 0x667a3da5)
+                GG.hLine(absX, absX + button.width - 1, absY, ACCENTCOLOR)
+                GG.hLine(absX, absX + button.width - 1, absY + button.height - 1, ACCENTCOLOR)
+                GG.vLine(absX, absY, absY + button.height, ACCENTCOLOR)
+                GG.vLine(absX + button.width - 1, absY, absY + button.height, ACCENTCOLOR)
             }
+            GG.disableScissor()
         }
 
         renderTooltip(GG, mouseX, mouseY)
     }
 
     private fun renderBlockListPanel(GG: GuiGraphics) {
-        // BLEH had to use debbugeer for it, i RLLY need to finish OFUPT
-        val x = leftPos
-        val y = topPos
-        val w = (imageWidth * 0.45).toInt()
-        val h = imageHeight
-
-        GG.fill(x, y, x + w, y + h, PANELBG)
+        val x = blockListPanel.x
+        val y = blockListPanel.y
+        val w = blockListPanel.width
 
         val title = Component.literal("BLOCK LIST").withStyle(ChatFormatting.BOLD)
-        GG.drawCenteredString(font, title, x + w / 2, y + 8, ACCENTCOLOR)
-        GG.hLine(x, x + w - 1, y + 20, PANELBORDER)
+        GG.drawCenteredString(font, title, x + w / 2, y - 12, ACCENTCOLOR)
+    }
+
+    private fun clearLists() {
+        // Tralalala, me a moron forgot to use this and had invisible mouse issue :P
+        toggleButtons.values.forEach { removeWidget(it) }
+        toggleButtons.clear()
+        sliderButtons.values.forEach { removeWidget(it) }
+        sliderButtons.clear()
+        textFields.values.forEach { removeWidget(it) }
+        textFields.clear()
+    }
+
+    private fun rebuildSettings(block: KontraptionBConfigControl.ConfigBlock) {
+        clearLists()
+        for (setting in block.settings) {
+            when (setting) {
+                is KontraptionBConfigControl.BlockSetting.BooleanSetting -> {
+                    val toggle =
+                        ToggleButton
+                            .Builder(0, 0, 40, 20)
+                            .labels(Component.literal("ON"), Component.literal("OFF"))
+                            .initialState(setting.value)
+                            .onToggle { newState -> setting.value = newState }
+                            .build()
+                    toggleButtons[setting] = toggle
+                    addRenderableWidget(toggle)
+                }
+                is KontraptionBConfigControl.BlockSetting.IntSetting -> {
+                    val iniVal = setting.value.toDouble()
+                    val slider =
+                        SliderButton
+                            .Builder(0, 0, 100, 20)
+                            .initialValue(iniVal)
+                            .minValue(setting.minVal / if (setting.scaled) 10.0 else 1.0)
+                            .maxValue(setting.maxVal / if (setting.scaled) 10.0 else 1.0)
+                            .step(if (setting.scaled) 0.1 else 1.0)
+                            .label { Component.literal("%.1f".format(it)) }
+                            .onValueChange { newVal -> setting.setFromDisplay(newVal) }
+                            .build()
+                    sliderButtons[setting] = slider
+                    addRenderableWidget(slider)
+                }
+                is KontraptionBConfigControl.BlockSetting.StringSetting -> {
+                    val textField =
+                        TextField
+                            .Builder(0, 0, 100, 20)
+                            .initialText(setting.value)
+                            .maxLength(32)
+                            .onTextChange { newText -> setting.value = newText }
+                            .build()
+                    textFields[setting] = textField
+                    addRenderableWidget(textField)
+                }
+            }
+        }
+
+        currentSettingsBlock = block
+    }
+
+    override fun keyPressed(
+        keyCode: Int,
+        scanCode: Int,
+        modifiers: Int,
+    ): Boolean {
+        if (blockListPanel.keyPressed(keyCode, scanCode, modifiers)) {
+            return true
+        }
+        if (keyCode == GLFW.GLFW_KEY_E) {
+            return true
+        }
+
+        return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
     private fun renderBlockSettingsPanel(GG: GuiGraphics) {
@@ -143,62 +283,68 @@ class ShipTerminalScreen(
 
         val block = menz.configBlocks.getOrNull(selectedBlockInd) ?: return
 
-        // WORKS!!
-        val blockName = Component.translatable(block.blockId).withStyle(ChatFormatting.BOLD)
-        GG.drawString(font, blockName, panelX + SIDEGAP, panelY + 30, ACCENTCOLOR, false)
+        if (block != currentSettingsBlock) {
+            rebuildSettings(block) // DONT ASK
+        }
 
-        // Egh
         val boxHeight = 28
         val gap = 8
         var settingY = panelY + 50
 
         for (setting in block.settings) {
-            // BS Background, does this need to be in bg render?
             GG.fill(panelX + SIDEGAP, settingY, panelX + panelW - SIDEGAP, settingY + boxHeight, 0xFF2a2a3a.toInt())
-
-            // BS name
             GG.drawString(font, setting.name, panelX + SIDEGAP + 4, settingY + TEXTPOSOFF, TEXTCOLOR, false)
 
-            // Bs Value
             when (setting) {
                 is KontraptionBConfigControl.BlockSetting.BooleanSetting -> {
                     val rightEdgeX = panelX + panelW - SIDEGAP - RIGHTOFFET
-                    val toggleState = if (setting.value) "ON" else "OFF"
-                    val toggleColor = if (setting.value) 0xFF00BB00.toInt() else 0xFFBB0000.toInt()
-                    val textWidth = font.width(toggleState)
-                    val startX = rightEdgeX - textWidth
-                    GG.drawString(font, toggleState, startX, settingY + TEXTPOSOFF, toggleColor, false)
+                    val btnWidth = 40
+                    val btnHeight = 20
+                    val btnX = rightEdgeX - btnWidth
+                    val btnY = settingY + (boxHeight - btnHeight) / 2
+                    toggleButtons[setting]?.setPosition(btnX, btnY)
                 }
-
                 is KontraptionBConfigControl.BlockSetting.IntSetting -> {
-                    val rightEdgeX = panelX + panelW - SIDEGAP - RIGHTOFFET
-                    val valueText = setting.value.toString()
-                    val textWidth = font.width(valueText)
-                    val startX = rightEdgeX - textWidth
-                    GG.drawString(font, valueText, startX, settingY + TEXTPOSOFF, 0xFF5694E3.toInt(), false)
+                    val sliderWidth = 100
+                    val sliderHeight = 20
+                    val sliderX = panelX + panelW - SIDEGAP - RIGHTOFFET - sliderWidth
+                    val sliderY = settingY + (boxHeight - sliderHeight) / 2
+                    sliderButtons[setting]?.setPosition(sliderX, sliderY)
                 }
-                // Right positioned
-
                 is KontraptionBConfigControl.BlockSetting.StringSetting -> {
-                    val rightEdgeX = panelX + panelW - SIDEGAP - RIGHTOFFET
-                    val textWidth = font.width(setting.value)
-                    val startX = rightEdgeX - textWidth
-                    GG.drawString(font, setting.value, startX, settingY + TEXTPOSOFF, 0xFFAA22DD.toInt(), false)
+                    val textWidth = 100
+                    val textHeight = 20
+                    val fieldX = panelX + panelW - SIDEGAP - RIGHTOFFET - textWidth
+                    val fieldY = settingY + (boxHeight - textHeight) / 2
+                    textFields[setting]?.setPosition(fieldX, fieldY)
                 }
             }
 
             settingY += boxHeight + gap
         }
+        saveButton.setPosition(panelX + SIDEGAP, panelY + panelH - 30)
+        saveButton.visible = menz.configBlocks.getOrNull(selectedBlockInd) != null
+    }
 
-        // Save button
-        val saveButton =
-            Button
-                .builder(Component.literal("SAVE SETTINGS")) {
-                    // PACKET BS
-                }.bounds(panelX + SIDEGAP, panelY + panelH - 30, 100, 20)
-                .build()
+    override fun mouseClicked(
+        mouseX: Double,
+        mouseY: Double,
+        button: Int,
+    ): Boolean {
+        if (blockListPanel.mouseClicked(mouseX, mouseY, button)) {
+            return true
+        }
+        return super.mouseClicked(mouseX, mouseY, button)
+    }
 
-        addRenderableWidget(saveButton)
+    override fun charTyped(
+        codePoint: Char,
+        modifiers: Int,
+    ): Boolean {
+        if (blockListPanel.charTyped(codePoint, modifiers)) {
+            return true
+        }
+        return super.charTyped(codePoint, modifiers)
     }
 
     override fun renderLabels(

@@ -180,7 +180,7 @@ class TileEntityShipControlInterface(
                         ByteUtils.getBool(seatedControllingPlayer!!.bface, 5),
                     )
                 for (i in keyBindings.indices) {
-                    val isPressed = keyBindings[i] == true
+                    val isPressed = keyBindings[i]
                     if (isPressed != keyStates[i]) {
                         MinecraftForge.EVENT_BUS.post(KeyBindEvent(i + 1, isPressed, entity.controllingPassenger as ServerPlayer, ship))
                         keyStates[i] = isPressed

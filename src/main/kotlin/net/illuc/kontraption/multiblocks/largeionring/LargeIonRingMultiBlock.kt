@@ -94,8 +94,8 @@ open class LargeIonRingMultiBlock(
     override fun isMachineActive(): Boolean = enabled
 
     override fun setMachineActive(active: Boolean) {
-        if (this.isMachineActive() === active) {
-            return
+        if (this.isMachineActive() == active) {
+            return // why tf did i use exact here?
         }
 
         if (active) {
@@ -282,6 +282,7 @@ open class LargeIonRingMultiBlock(
     }
 
     private fun burnFuel() {
+        if (currentThrust <= 0.0) return
         val pwrPrc = currentThrust / thrusterPower
         val toBurn = KontraptionConfigs.kontraption.largeIonEnergyConsumption.get() * pwrPrc
 

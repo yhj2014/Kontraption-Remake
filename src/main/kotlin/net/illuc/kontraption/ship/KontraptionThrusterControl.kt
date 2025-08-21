@@ -133,9 +133,8 @@ class KontraptionThrusterControl : ShipForcesInducer {
         val totalForce = Vector3d(dampeningForce)
 
         if (playerInput.lengthSquared() > 0.001) {
-            playerInput.x = playerInput.x * -1
-            playerInput.z = playerInput.z * -1
-            totalForce.add(Vector3d(playerInput).normalize().mul(thrusterStrength))
+            val invertedInput = Vector3d(playerInput).mul(-1.0, 1.0, -1.0) // incase ima need pi later
+            totalForce.add(Vector3d(invertedInput).normalize().mul(thrusterStrength))
         }
 
         val requestedThrust = mutableMapOf<Vector3d, Double>()

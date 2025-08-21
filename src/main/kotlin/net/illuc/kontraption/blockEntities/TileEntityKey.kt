@@ -8,6 +8,7 @@ import net.illuc.kontraption.blocks.BlockKey
 import net.illuc.kontraption.events.KeyBindEvent
 import net.illuc.kontraption.ship.KontraptionBConfigControl
 import net.illuc.kontraption.ship.KontraptionKeyBlockControl
+import net.illuc.kontraption.util.ControllableTileEntity
 import net.illuc.kontraption.util.KontraptionVSUtils
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
@@ -17,21 +18,28 @@ import net.minecraft.world.level.block.state.BlockState
 class TileEntityKey(
     pos: BlockPos?,
     state: BlockState?,
-) : TileEntityMekanism(KontraptionBlocks.KEY, pos, state) {
-    private var isEnabled = false
-    var keybindz: Int = 0
+) : ControllableTileEntity(KontraptionBlocks.KEY, pos, state) {
+    override val controlDefaults =
+        mapOf(
+            "enabled" to false,
+            "somenumbrr" to (0 until 120421).random(),
+            "keybind_numner" to -1,
+            "name" to "Redstone Interface",
+        )
+    override val controlDefaultsNonSync: Map<String, KontraptionBConfigControl.BlockSetting.IntSetting> =
+        mapOf(
+            "somenumbrr" to intSettingMeta("somenumbrr", 120422, 0, false),
+        )
+    val isEnabled: Boolean get() = controlSettings["enabled"] as Boolean
+    val number: Int get() = controlSettings["somenumbrr"] as Int
+    var keybindz: Int = controlSettings["keybind_numner"] as? Int ?: -1
+        get() = (controlSettings["keybind_numner"] as? Int) ?: field
+        set(value) {
+            controlSettings["keybind_numner"] = value
+        }
+    val thrusterName: String get() = controlSettings["name"] as String
 
     fun tick() {
-    }
-
-    override fun load(nbt: CompoundTag) {
-        super.load(nbt)
-        keybindz = nbt.getInt("keybind")
-    }
-
-    override fun saveAdditional(nbtTags: CompoundTag) {
-        super.saveAdditional(nbtTags)
-        nbtTags.putInt("keybind", keybindz)
     }
 
     override fun getUpdateTag(): CompoundTag {
@@ -87,14 +95,6 @@ class TileEntityKey(
     fun shipAdd() {
         if (level !is ServerLevel) return
         if (worldPosition == null) return
-        val slevel = level as ServerLevel
-        val settings =
-            listOf(
-                KontraptionBConfigControl.BlockSetting.BooleanSetting("enabled", true),
-                KontraptionBConfigControl.BlockSetting.IntSetting("range", (10000 until 100000000).random()),
-                KontraptionBConfigControl.BlockSetting.StringSetting("name", "Redstone Interface"),
-            )
-
         val ship =
             KontraptionVSUtils.getShipObjectManagingPos((level as ServerLevel), worldPosition)
                 ?: KontraptionVSUtils.getShipManagingPos((level as ServerLevel), worldPosition)
@@ -106,13 +106,6 @@ class TileEntityKey(
                 0,
             )
         }
-        KontraptionBConfigControl.getOrCreate(ship).let {
-            it.removeConfigBlock(worldPosition)
-
-            it.addConfigBlock(worldPosition, slevel.getBlockEntity(worldPosition), settings)
-            Kontraption.LOGGER.debug("Added to config list, may Asmodeus have mercy over us")
-        }
-        // This has to somehow be called on ship creation . . . ON LOAD XD . . . AH HOW WERE TABLES TURNED
     }
 
     override fun onLoad() {
