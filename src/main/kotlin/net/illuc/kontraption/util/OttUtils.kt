@@ -57,6 +57,7 @@ object OttUtils {
      * @param height Ammout of layers
      * @param depth Height of ring
      * @return Returns Array of ByteArrays that represents ion ring structure of gives size*/
+    // TODO: YEET DIS BITCH
     fun generateAllowedLayers(
         width: Int,
         height: Int,

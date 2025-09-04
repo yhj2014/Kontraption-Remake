@@ -60,13 +60,27 @@ class ShipTerminalScreen(
 
     override fun init() {
         super.init()
-        this.imageWidth = 900
-        this.imageHeight = 550
-        this.leftPos = (width - imageWidth) / 2
-        this.topPos = (height - imageHeight) / 2
+        val windSize = 0.9f // TODO: Figure out global scaling on dis bs
+        val maxWidth = (this.width * windSize) // 0.9 is total scale of window
+        val maxHeight = (this.height * windSize)
+
+        val baseWidth = 256f
+        val baseHeight = 200f
+
+        val scaleX = maxWidth / baseWidth
+        val scaleY = maxHeight / baseHeight
+        val scale = minOf(scaleX, scaleY)
+
+        this.imageWidth = (baseWidth * scale).toInt()
+        this.imageHeight = (baseHeight * scale).toInt()
+        this.leftPos = (this.width - this.imageWidth) / 2
+        this.topPos = (this.height - this.imageHeight) / 2
+
         this.inventoryLabelY = 10000
+
         buttonMap.clear()
         children().removeIf { it is Button }
+
         val listPanelWidth = (imageWidth * 0.45).toInt()
         val listPanelHeight = imageHeight - 50 // DIS IS PADDING, TOO LAZY TO YEET INTO VARS
         val panelX = leftPos
@@ -76,12 +90,12 @@ class ShipTerminalScreen(
         blockListPanel =
             net.illuc.kontraption.util.guiutils.ListPanel
                 .Builder(panelX, panelY, listPanelWidth, listPanelHeight)
-                .padding(10)
+                .padding((imageWidth * 0.02f).toInt())
                 .backgroundColor(PANELBG)
                 .borderColor(PANELBORDER)
                 .scrollbar(true)
                 .searchable(true)
-                .searchBarHeight(searchHeight)
+                .searchBarHeight((imageHeight * 0.05f).toInt())
                 .build()
 
         val blocks = menz.configBlocks
@@ -92,14 +106,16 @@ class ShipTerminalScreen(
                     .firstOrNull { it.name == "name" }
                     ?.value
             val blockName = customName?.takeIf { it.isNotBlank() } ?: Component.translatable(block.blockId).string
+            val btnWidth = listPanelWidth - 12
+            val btnHeight = (imageHeight * 0.08f).toInt()
             val btn =
                 Button
                     .builder(Component.literal(blockName)) {
                         selectedBlockInd = i
-                    }.bounds(0, 0, listPanelWidth - 12, BLOCKHEIGHT) // Bounds are shifted by le listpan, may fight with scallable btn
+                    }.bounds(0, 0, btnWidth, btnHeight) // Bounds are shifted by le listpan, may fight with scallable btn
                     .build()
 
-            blockListPanel.addChild(btn, SIDEGAP, i * (BLOCKHEIGHT + VERTICALGAP))
+            blockListPanel.addChild(btn, SIDEGAP, i * (btnHeight + VERTICALGAP))
             buttonMap.add(btn)
             buttonBlockMap[btn] = block
         }
@@ -131,7 +147,7 @@ class ShipTerminalScreen(
                             ?.takeIf { it.isNotBlank() }
                             ?: Component.translatable(blk.blockId).string
                     buttonMap.getOrNull(selectedBlockInd)?.message = Component.literal(newName) // sketchy and is getting 100% replaced with proper button class xd
-                }.bounds(panelX + SIDEGAP, panelY + imageHeight - 30, 100, 20)
+                }.bounds(panelX + SIDEGAP, panelY + imageHeight - 30, (imageWidth * 0.2f).toInt(), 20)
                 .build()
 
         addRenderableWidget(saveButton)

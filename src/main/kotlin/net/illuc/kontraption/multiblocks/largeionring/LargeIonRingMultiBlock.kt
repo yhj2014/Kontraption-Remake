@@ -25,6 +25,7 @@ import org.joml.Vector3d
 import org.valkyrienskies.core.api.ships.Ship
 import java.util.function.Consumer
 
+// TODO: IMPORTANT, THIS IS WAYY TO HARD CODED, YEET IT INTO BUNCH OF SUPERCLASSES SKELIES
 open class LargeIonRingMultiBlock(
     world: Level,
 ) : AbstractCuboidMultiblockController<LargeIonRingMultiBlock>(world),
@@ -83,7 +84,7 @@ open class LargeIonRingMultiBlock(
             5.toByte() to listOf(GlobalRegistry.Blocks.LARGE_ION_THRUSTER_COIL.get()),
         )
 
-    val structureRequirement = StructReq(blockMappings)
+    val structureHelper = StructHelper(blockMappings)
 
     // nukes internall stuff
     fun reset() {
@@ -298,48 +299,55 @@ open class LargeIonRingMultiBlock(
     }
 
     override fun isMachineWhole(validatorCallback: IMultiblockValidator): Boolean {
-        if (boundingBox.lengthX > 15 || boundingBox.lengthX < 5 || boundingBox.lengthZ > 15 || boundingBox.lengthZ < 5 || boundingBox.lengthY != 2 || boundingBox.lengthZ != boundingBox.lengthX) {
-            validatorCallback.setLastError("Invalid Length of the multiblock", *arrayOfNulls(0))
+        if (boundingBox.lengthX !in 5..15 ||
+            boundingBox.lengthZ !in 5..15 ||
+            boundingBox.lengthY != 2 || boundingBox.lengthZ != boundingBox.lengthX
+        ) {
+            validatorCallback.setLastError("Invalid Size of the multiblock")
             return false
         }
-        var hasController: Boolean = false
+
+        var hasController = false
+
         val hollowVolume = (boundingBox.lengthX - 4) * (boundingBox.lengthZ - 4) * boundingBox.lengthY
         val expectedPartsCount = boundingBox.lengthX * boundingBox.lengthZ * boundingBox.lengthY - hollowVolume
         if (expectedPartsCount != this.partsCount) {
-            validatorCallback.setLastError("Invalid block amount for the multiblock", *arrayOfNulls(0))
+            validatorCallback.setLastError("Invalid block amount for the multiblock")
             return false
         }
-        val (minX, minY, minZ) = arrayOf(boundingBox.minX, boundingBox.minY, boundingBox.minZ)
-        val (maxX, maxY, maxZ) = arrayOf(boundingBox.maxX, boundingBox.maxY, boundingBox.maxZ)
-        val allowedLayers = OttUtils.generateAllowedLayers(boundingBox.lengthX, boundingBox.lengthY, boundingBox.lengthZ)
-        for (x in minX..maxX) {
-            for (y in minY..maxY) {
-                for (z in minZ..maxZ) {
-                    val pos = BlockPos(x, y, z).mutable()
-                    val (isValid, requiredType) = structureRequirement.isValidBlock(world, pos, true, boundingBox, allowedLayers)
-                    if (!isValid) {
-                        // Kontraption.LOGGER.info("Invalid block at $pos, becouse $requiredType is required but ${thrusterLevel!!.getBlockState(pos)} was found")
-                        // Kontraption.LOGGER.info("Bounding Box is from ${boundingBox.minX} .. ${boundingBox.maxX} X and ${boundingBox.minY} .. ${boundingBox.maxY} Y and ${boundingBox.minZ} .. ${boundingBox.maxZ} Z")
-                        validatorCallback.setLastError(pos, "Invalid block type for this position $requiredType", *arrayOfNulls(0))
+        val shape: Shape3D = ShapeGenerators.largeIonRing(boundingBox.lengthX, boundingBox.lengthY, boundingBox.lengthZ)
+        structureHelper.setShape3D(shape)
+        val min = BlockPos(boundingBox.minX, boundingBox.minY, boundingBox.minZ)
+
+        val sy = boundingBox.lengthY
+        val sz = boundingBox.lengthZ
+        val sx = boundingBox.lengthX
+
+        for (y in 0 until sy) {
+            for (z in 0 until sz) {
+                for (x in 0 until sx) {
+                    val pos = min.offset(x, y, z)
+                    val (ok, type) = structureHelper.isValidBlock(world, pos, boundingBox)
+                    if (!ok) {
+                        validatorCallback.setLastError(pos, "Invalid block type at $pos (expected $type)")
                         return false
                     }
                     val blockEntity = world.getBlockEntity(pos) as? AbstractRingEntity
                     if (blockEntity?.type == GlobalRegistry.TileEntities.LARGE_ION_THRUSTER_CONTROLLER.get()) {
                         centerExhaust = this.boundingBox.center
-                        val offset = blockEntity?.worldPosition?.subtract(centerExhaust)
-                        blockEntity?.setRNTags(offset, boundingBox.lengthX)
+                        val offset = blockEntity.worldPosition.subtract(centerExhaust)
+                        blockEntity.setRNTags(offset, boundingBox.lengthX)
                         controller = blockEntity
                         innerVolume = (boundingBox.lengthX - 4) * (boundingBox.lengthX - 4) * 2
                         blockEntity.isController = true
                         hasController = true
                     }
-                    when (requiredType) {
+                    when (type) {
                         3.toByte() -> blockEntity?.isTop = true
-                        4.toByte() ->
-                            blockEntity.let {
-                                it?.isTop = true
-                                it?.isCorner = true
-                            }
+                        4.toByte() -> {
+                            blockEntity?.isTop = true
+                            blockEntity?.isCorner = true
+                        }
                         else -> blockEntity?.isTop = false
                     }
                 }
