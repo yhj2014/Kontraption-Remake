@@ -12,8 +12,6 @@ import org.joml.Vector3d
 import org.valkyrienskies.core.api.ships.properties.ShipId
 import org.valkyrienskies.core.api.ships.properties.ShipInertiaData
 import org.valkyrienskies.core.api.ships.properties.ShipTransform
-import org.valkyrienskies.core.apigame.physics.PhysicsEntityData
-import org.valkyrienskies.core.apigame.physics.VSWheelCollisionShapeData
 import org.valkyrienskies.core.impl.game.ships.ShipInertiaDataImpl
 
 class BlockWheel(
@@ -51,7 +49,7 @@ class BlockWheel(
         }*/
     }
 
-    companion object {
+  /*  companion object {
         fun createBasicSphereData(
             shipId: ShipId,
             transform: ShipTransform,
@@ -72,4 +70,6 @@ class BlockWheel(
             )
         }
     }
+
+   */
 }

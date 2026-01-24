@@ -6,10 +6,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import org.joml.Vector3d;
-import org.valkyrienskies.core.apigame.world.ServerShipWorldCore;
+import org.valkyrienskies.core.api.ships.ServerShip;
+import org.valkyrienskies.core.api.world.ServerShipWorld;
+import org.valkyrienskies.core.internal.ShipTeleportData;
+import org.valkyrienskies.core.internal.world.VsiServerShipWorld;
 import org.valkyrienskies.core.util.datastructures.DenseBlockPosSet;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
+import org.valkyrienskies.mod.common.ValkyrienSkiesMod;
 import org.valkyrienskies.mod.common.assembly.ShipAssemblyKt;
+import org.valkyrienskies.mod.common.util.GameToPhysicsAdapter;
 
 
 // BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE BRAIN DAMAGE
@@ -18,36 +23,40 @@ public class KontraptionVSUtils {
         return VSGameUtilsKt.getShipManagingPos(serverLevel, chunkX, chunkZ);
     }
 
-    public static org.valkyrienskies.core.api.ships.Ship getShipManagingPos(Level level, BlockPos blockPos){
-        return VSGameUtilsKt.getShipManagingPos(level, blockPos);
+    public static org.valkyrienskies.core.api.ships.LoadedShip getShipManagingPos(Level level, BlockPos blockPos){
+        return VSGameUtilsKt.getLoadedShipManagingPos(level, blockPos);
     }
 
-    public static org.valkyrienskies.core.api.ships.ServerShip getShipManagingPos(ServerLevel serverLevel, BlockPos blockPos){
-        return VSGameUtilsKt.getShipManagingPos(serverLevel, blockPos);
+    public static org.valkyrienskies.core.api.ships.LoadedServerShip getShipManagingPos(ServerLevel serverLevel, BlockPos blockPos){
+        return VSGameUtilsKt.getLoadedShipManagingPos(serverLevel, blockPos);
     }
 
-    public static org.valkyrienskies.core.api.ships.ServerShip getShipObjectManagingPos(ServerLevel serverLevel, BlockPos blockPos){
-        return VSGameUtilsKt.getShipObjectManagingPos(serverLevel, blockPos);
+    public static org.valkyrienskies.core.api.ships.LoadedServerShip getShipObjectManagingPos(ServerLevel serverLevel, BlockPos blockPos){
+        return VSGameUtilsKt.getLoadedShipManagingPos(serverLevel, blockPos);
     }
 
-    public static org.valkyrienskies.core.api.ships.Ship getShipObjectManagingPos(Level level, BlockPos blockPos){
-        return VSGameUtilsKt.getShipObjectManagingPos(level, blockPos);
+    public static org.valkyrienskies.core.api.ships.LoadedShip getShipObjectManagingPos(Level level, BlockPos blockPos){
+        return VSGameUtilsKt.getLoadedShipManagingPos(level, blockPos);
     }
 
-    public static org.valkyrienskies.core.api.ships.Ship getShipObjectManagingPos(Level level, Vector3d blockPos){
-        return VSGameUtilsKt.getShipObjectManagingPos(level, blockPos.x, blockPos.y, blockPos.z);
+    public static org.valkyrienskies.core.api.ships.LoadedShip getShipObjectManagingPos(Level level, Vector3d blockPos){
+        return VSGameUtilsKt.getLoadedShipManagingPos(level, blockPos.x, blockPos.y, blockPos.z);
     }
 
-    public static ServerShipWorldCore getShipObjectWorld(ServerLevel level){
+    public static VsiServerShipWorld getShipObjectWorld(ServerLevel level){
         return VSGameUtilsKt.getShipObjectWorld(level);
     }
 
+
     public static void createNewShipWithBlocks(BlockPos pos, DenseBlockPosSet set, ServerLevel level){
-        ShipAssemblyKt.createNewShipWithBlocks(pos, set, level);
+        ShipAssemblyKt.createNewShipWithBlocks(pos, set, level);//TODO: Its structure now, get corners n shit
     }
     public static String dimensionID(ServerLevel level){
         return  VSGameUtilsKt.getDimensionId(level);
 
+    }
+    public static void tpShip(ServerShipWorld s, ServerShip ss, ShipTeleportData std){
+        ValkyrienSkiesMod.getVsCore().teleportShip(s,ss,std);
     }
 
 }

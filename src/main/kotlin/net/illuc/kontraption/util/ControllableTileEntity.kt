@@ -2,7 +2,6 @@ package net.illuc.kontraption.util
 
 import mekanism.api.providers.IBlockProvider
 import mekanism.common.tile.base.TileEntityMekanism
-import net.illuc.kontraption.ship.KontraptionBConfigControl
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerLevel

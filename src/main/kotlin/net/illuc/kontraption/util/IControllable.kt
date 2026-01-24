@@ -2,15 +2,16 @@ package net.illuc.kontraption.util
 
 import mekanism.common.tile.base.TileEntityMekanism
 import net.illuc.kontraption.Kontraption
-import net.illuc.kontraption.ship.KontraptionBConfigControl
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
+import org.valkyrienskies.core.api.util.GameTickOnly
 
 interface IControllable {
     val controlSettings: MutableMap<String, Any>
     val controlDefaults: Map<String, Any>
-    val controlDefaultsNonSync: Map<String, KontraptionBConfigControl.BlockSetting.IntSetting>
+    val controlDefaultsNonSync: Map<String, KontraptionBConfigControlOLD.BlockSetting.IntSetting>
         get() = emptyMap()
 
     fun registerControlSettings() {
@@ -24,7 +25,7 @@ interface IControllable {
         max: Int,
         min: Int,
         scaled: Boolean,
-    ) = KontraptionBConfigControl.BlockSetting.IntSetting(name, 0, max, min, scaled) // DETERMINATION
+    ) = KontraptionBConfigControlOLD.BlockSetting.IntSetting(name, 0, max, min, scaled) // DETERMINATION
 
     fun saveControlSettings(tag: CompoundTag) {
         val settingsTag = CompoundTag()
@@ -69,27 +70,27 @@ interface IControllable {
                 ?: KontraptionVSUtils.getShipManagingPos(level as ServerLevel, blockPos)
                 ?: return
 
-        KontraptionBConfigControl.getOrCreate(ship).allConfigBlock().find { it.pos == blockPos.toJOML() }?.let { configBlock ->
+        KontraptionBConfigControlOLD.getOrCreate(ship).allConfigBlock().find { it.pos == blockPos.toJOML() }?.let { configBlock ->
             configBlock.settings.forEach { setting ->
                 when (setting) {
-                    is KontraptionBConfigControl.BlockSetting.BooleanSetting ->
+                    is KontraptionBConfigControlOLD.BlockSetting.BooleanSetting ->
                         controlSettings[setting.name] = setting.value
-                    is KontraptionBConfigControl.BlockSetting.IntSetting ->
+                    is KontraptionBConfigControlOLD.BlockSetting.IntSetting ->
                         controlSettings[setting.name] = setting.value
-                    is KontraptionBConfigControl.BlockSetting.StringSetting ->
+                    is KontraptionBConfigControlOLD.BlockSetting.StringSetting ->
                         controlSettings[setting.name] = setting.value
                 }
             }
         }
     }
 
-    fun onControlSettingChanged(setting: KontraptionBConfigControl.BlockSetting<*>) {
+    fun onControlSettingChanged(setting: KontraptionBConfigControlOLD.BlockSetting<*>) {
         when (setting) {
-            is KontraptionBConfigControl.BlockSetting.BooleanSetting ->
+            is KontraptionBConfigControlOLD.BlockSetting.BooleanSetting ->
                 controlSettings[setting.name] = setting.value
-            is KontraptionBConfigControl.BlockSetting.IntSetting ->
+            is KontraptionBConfigControlOLD.BlockSetting.IntSetting ->
                 controlSettings[setting.name] = setting.value
-            is KontraptionBConfigControl.BlockSetting.StringSetting ->
+            is KontraptionBConfigControlOLD.BlockSetting.StringSetting ->
                 controlSettings[setting.name] = setting.value
         }
         if (this is BlockEntity) {
@@ -97,6 +98,7 @@ interface IControllable {
         }
     }
 
+    @OptIn(GameTickOnly::class)
     fun TileEntityMekanism.registerWithControlSystem() {
         if (level !is ServerLevel || blockPos == null) return
 
@@ -104,10 +106,10 @@ interface IControllable {
             controlSettings.map { (name, value) ->
                 val default = controlDefaults[name]
                 when (default) {
-                    is Boolean -> KontraptionBConfigControl.BlockSetting.BooleanSetting(name, value as Boolean)
+                    is Boolean -> KontraptionBConfigControlOLD.BlockSetting.BooleanSetting(name, value as Boolean)
                     is Int -> {
                         val meta = controlDefaultsNonSync[name] ?: intSettingMeta(name, 100, 0, false) // if it somehow have read that its int IT HAS TO HAVE DATA!!, this comment reffered to me placing !! at this, at first launch i got null pointer . . .
-                        KontraptionBConfigControl.BlockSetting.IntSetting(
+                        KontraptionBConfigControlOLD.BlockSetting.IntSetting(
                             name,
                             value as Int,
                             meta.maxVal,
@@ -115,7 +117,7 @@ interface IControllable {
                             meta.scaled,
                         )
                     }
-                    is String -> KontraptionBConfigControl.BlockSetting.StringSetting(name, value as String)
+                    is String -> KontraptionBConfigControlOLD.BlockSetting.StringSetting(name, value as String)
                     else -> throw IllegalArgumentException("Unsupported setting type")
                 }
             }
@@ -125,11 +127,11 @@ interface IControllable {
                 ?: KontraptionVSUtils.getShipManagingPos(level as ServerLevel, blockPos)
                 ?: return
 
-        KontraptionBConfigControl.getOrCreate(ship).let {
+        KontraptionBConfigControlOLD.getOrCreate(ship).let {
             it.removeConfigBlock(blockPos)
-            it.removeListeners(blockPos.toJOML())
+            it.removeListeners(blockPos)
             it.addConfigBlock(blockPos, this, settings)
-            it.addListener(blockPos.toJOML()) { setting ->
+            it.addListener(blockPos) { setting ->
                 if (this is IControllable) {
                     this.onControlSettingChanged(setting)
                 }
@@ -137,6 +139,7 @@ interface IControllable {
         }
     }
 
+    @OptIn(GameTickOnly::class)
     fun TileEntityMekanism.unregisterFromControlSystem() {
         if (level !is ServerLevel) return
 
@@ -145,8 +148,8 @@ interface IControllable {
                 ?: KontraptionVSUtils.getShipManagingPos(level as ServerLevel, blockPos)
                 ?: return
 
-        val bConfig = KontraptionBConfigControl.getOrCreate(ship)
-        bConfig.removeListeners(blockPos.toJOML()) // facepalm, i did remove it from lisener system BUT NOT THE FUCKIN BCONFIG
+        val bConfig = KontraptionBConfigControlOLD.getOrCreate(ship)
+        bConfig.removeListeners(blockPos) // facepalm, i did remove it from lisener system BUT NOT THE FUCKIN BCONFIG
         bConfig.removeConfigBlock(blockPos)
     }
 }

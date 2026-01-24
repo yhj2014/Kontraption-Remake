@@ -19,6 +19,7 @@ import net.illuc.kontraption.client.gui.GuiGun
 import net.illuc.kontraption.command.CommandKontraption
 import net.illuc.kontraption.config.KontraptionConfigs
 import net.illuc.kontraption.config.KontraptionKeyBindings
+import net.illuc.kontraption.controls.KontraptionSeatedControllingPlayer
 import net.illuc.kontraption.debugger.DebugCommands
 import net.illuc.kontraption.entity.KontraptionShipMountingEntity
 import net.illuc.kontraption.events.EventListener
@@ -32,7 +33,12 @@ import net.illuc.kontraption.network.KontraptionPacketHandler
 import net.illuc.kontraption.renderers.LargeIonExhaustRenderer
 import net.illuc.kontraption.renderers.LargeIonRenderer
 import net.illuc.kontraption.renderers.PlushieRenderer
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD
+import net.illuc.kontraption.ship.KontraptionGyroControl
+import net.illuc.kontraption.ship.KontraptionKeyBlockControl
+import net.illuc.kontraption.ship.KontraptionThrusterControl
 import net.illuc.kontraption.util.BlockDamageManager
+import net.illuc.kontraption.util.vsutils.ConnectorControllers
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.MenuScreens
 import net.minecraft.client.particle.SpriteSet
@@ -43,6 +49,7 @@ import net.minecraft.core.registries.Registries
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.entity.EntityType
 import net.minecraft.world.entity.MobCategory
 import net.minecraft.world.entity.player.Inventory
@@ -56,6 +63,7 @@ import net.minecraftforge.client.event.RegisterParticleProvidersEvent
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.common.extensions.IForgeMenuType
 import net.minecraftforge.event.RegisterCommandsEvent
+import net.minecraftforge.event.TickEvent
 import net.minecraftforge.event.level.LevelEvent
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.ModLoadingContext
@@ -74,7 +82,9 @@ import net.minecraftforge.registries.RegistryObject
 import net.minecraftforge.versions.forge.ForgeVersion.MOD_ID
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import org.valkyrienskies.core.api.VsBeta
 import org.valkyrienskies.mod.client.EmptyRenderer
+import org.valkyrienskies.mod.common.vsCore
 import thedarkcolour.kotlinforforge.forge.MOD_BUS
 
 @Mod(Kontraption.MODID)
@@ -140,6 +150,7 @@ class Kontraption : IModModule {
         TAB_REGISTER.register(modEventBus)
     }
 
+    @OptIn(VsBeta::class)
     private fun commonSetup(event: FMLCommonSetupEvent) {
         // 1mB hydrogen + 2*bioFuel/tick*200ticks/100mB * 20x efficiency bonus
         /*MekanismGases.ETHENE.get().addAttribute(Fuel(MekanismConfig.general.ETHENE_BURN_TIME,
@@ -162,6 +173,11 @@ class Kontraption : IModModule {
         packetHandler.initialize()
 
         // Finalization
+        vsCore.registerAttachment(KontraptionThrusterControl::class.java)
+        vsCore.registerAttachment(KontraptionBConfigControlOLD::class.java)
+        vsCore.registerAttachment(KontraptionGyroControl::class.java)
+        vsCore.registerAttachment(KontraptionKeyBlockControl::class.java)
+        vsCore.registerAttachment(KontraptionSeatedControllingPlayer::class.java)
         Mekanism.logger.info("Loaded 'Kontraption' module.")
     }
 
@@ -267,6 +283,24 @@ class Kontraption : IModModule {
         fun packetHandler(): KontraptionPacketHandler = instance!!.packetHandler
 
         fun rl(path: String?): ResourceLocation = ResourceLocation(MODID, path)
+    }
+    @Mod.EventBusSubscriber(modid = MODID)
+    object CommonTick{
+        @SubscribeEvent
+        fun onServerTick(event: TickEvent.LevelTickEvent){
+            if (event.phase != TickEvent.Phase.END) return
+            val level = event.level
+            if (level !is ServerLevel) return
+
+            ConnectorControllers.tick(level)
+        }
+        @SubscribeEvent
+        fun onLevelUnload(event: LevelEvent.Unload) {
+            val level = event.level
+            if (level is ServerLevel) {
+                ConnectorControllers.unload(level)
+            }
+        }
     }
 
     @EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD, value = [Dist.CLIENT])

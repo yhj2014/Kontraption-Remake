@@ -13,7 +13,7 @@ import net.illuc.kontraption.entity.KontraptionShipMountingEntity
 import net.illuc.kontraption.events.KeyBindEvent
 import net.illuc.kontraption.gui.ShipTerminalMenu
 import net.illuc.kontraption.peripherals.ShipControlInterfacePeripheral
-import net.illuc.kontraption.ship.KontraptionBConfigControl
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD
 import net.illuc.kontraption.ship.KontraptionGyroControl
 import net.illuc.kontraption.ship.KontraptionThrusterControl
 import net.illuc.kontraption.util.ByteUtils
@@ -43,8 +43,7 @@ import net.minecraftforge.network.NetworkHooks
 import org.joml.Quaterniond
 import org.joml.Vector3d
 import org.joml.Vector3dc
-import org.valkyrienskies.core.api.ships.ServerShip
-import org.valkyrienskies.core.api.ships.saveAttachment
+import org.valkyrienskies.core.api.ships.LoadedServerShip
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -59,7 +58,7 @@ class TileEntityShipControlInterface(
         state,
     ),
     IComputerTile {
-    private val ship: ServerShip? get() = getShipObjectManagingPos((level as ServerLevel), this.blockPos)
+    private val ship: LoadedServerShip? get() = getShipObjectManagingPos((level as ServerLevel), this.blockPos)
     private var seatedControllingPlayer: KontraptionSeatedControllingPlayer? = null
     private val seats = mutableListOf<KontraptionShipMountingEntity>()
     private val logger = LogUtils.getLogger()
@@ -72,7 +71,7 @@ class TileEntityShipControlInterface(
 
     private var rotTarget = Quaterniond()
     private var velTarget = Vector3d()
-
+    private val TEST = GRAVITY_STAT
     val keyStates = BooleanArray(6) { false }
 
     lateinit var entity: KontraptionShipMountingEntity
@@ -123,12 +122,12 @@ class TileEntityShipControlInterface(
                 isController = true
             }
 
-        ship?.saveAttachment<KontraptionSeatedControllingPlayer>(KontraptionSeatedControllingPlayer(Direction.SOUTH))
+        ship?.setAttachment<KontraptionSeatedControllingPlayer>(KontraptionSeatedControllingPlayer(Direction.SOUTH))
         level.addFreshEntityWithPassengers(entity)
         return entity
     }
 
-    fun getConfigBlocks(): CopyOnWriteArrayList<KontraptionBConfigControl.ConfigBlock> = KontraptionBConfigControl.getOrCreate(this.ship!!).allConfigBlock()
+    fun getConfigBlocks(): CopyOnWriteArrayList<KontraptionBConfigControlOLD.ConfigBlock> = KontraptionBConfigControlOLD.getOrCreate(this.ship!!).allConfigBlock()
 
     fun tick() {
         val ship = this.ship ?: return

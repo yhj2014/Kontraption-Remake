@@ -41,12 +41,14 @@ import org.joml.Vector3d
 import org.joml.primitives.AABBd
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.Ship
-import org.valkyrienskies.core.apigame.ShipTeleportData
-import org.valkyrienskies.core.apigame.world.ServerShipWorldCore
-import org.valkyrienskies.core.impl.game.ShipTeleportDataImpl
-import org.valkyrienskies.core.impl.shadow.pl
+import org.valkyrienskies.core.internal.world.VsiServerShipWorld
 import org.valkyrienskies.core.util.datastructures.DenseBlockPosSet
 import org.valkyrienskies.core.util.toAABBd
+import org.valkyrienskies.mod.api.vsApi
+import org.valkyrienskies.mod.common.VSClientGameUtils
+import org.valkyrienskies.mod.common.ValkyrienSkiesMod
+import org.valkyrienskies.mod.common.dimensionId
+import org.valkyrienskies.mod.common.vsCore
 import java.awt.Color
 import kotlin.math.max
 import kotlin.math.min
@@ -265,15 +267,17 @@ class ItemToolgun(
                         energyContainer.extract(energyPerUse, Action.EXECUTE, AutomationType.MANUAL)
 
                         val serverShip: ServerShip = SelectedShip as ServerShip
+                        val shipWorld: VsiServerShipWorld = KontraptionVSUtils.getShipObjectWorld(level as ServerLevel?)
                         val shipHeight = SelectedShip!!.shipAABB!!.maxY().minus(SelectedShip!!.shipAABB!!.minY()).plus(1)
-                        val teleportData: ShipTeleportData = ShipTeleportDataImpl(Vector3d(res.blockPos.x.toDouble(), res.blockPos.y.toDouble().plus(shipHeight.toDouble()), res.blockPos.z.toDouble()), SelectedShip!!.transform.shipToWorldRotation, Vector3d(), Vector3d(), "minecraft:overworld", null)
-                        val shipWorld: ServerShipWorldCore = KontraptionVSUtils.getShipObjectWorld(level as ServerLevel?)
+                        val core = vsCore
+                        val teleportData: org.valkyrienskies.core.internal.ShipTeleportData = core.newShipTeleportData(newPos = Vector3d(res.blockPos.x.toDouble(), res.blockPos.y.toDouble().plus(shipHeight.toDouble()), res.blockPos.z.toDouble()), newRot = SelectedShip!!.transform.shipToWorldRotation, newDimension = level.dimensionId)//WHO TF THOUGHT THAT HARDCODING OVERWOLD WAS A GOOD IDEA
+
 
                         moved = true
 
                         player.sendSystemMessage(Component.translatable("toolgun.kontraption.moving_successful"))
 
-                        shipWorld.teleportShip(serverShip, teleportData)
+                        shipWorld.teleportShip(serverShip,teleportData)
                     } else {
                         player.sendSystemMessage(Component.translatable("toolgun.kontraption.cant_move_on_ship"))
 

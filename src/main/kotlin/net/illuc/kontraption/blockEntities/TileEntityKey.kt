@@ -1,12 +1,10 @@
 package net.illuc.kontraption.blockEntities
 
 import mekanism.common.Mekanism
-import mekanism.common.tile.base.TileEntityMekanism
-import net.illuc.kontraption.Kontraption
 import net.illuc.kontraption.KontraptionBlocks
 import net.illuc.kontraption.blocks.BlockKey
 import net.illuc.kontraption.events.KeyBindEvent
-import net.illuc.kontraption.ship.KontraptionBConfigControl
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD
 import net.illuc.kontraption.ship.KontraptionKeyBlockControl
 import net.illuc.kontraption.util.ControllableTileEntity
 import net.illuc.kontraption.util.KontraptionVSUtils
@@ -26,7 +24,7 @@ class TileEntityKey(
             "keybind_numner" to -1,
             "name" to "Redstone Interface",
         )
-    override val controlDefaultsNonSync: Map<String, KontraptionBConfigControl.BlockSetting.IntSetting> =
+    override val controlDefaultsNonSync: Map<String, KontraptionBConfigControlOLD.BlockSetting.IntSetting> =
         mapOf(
             "somenumbrr" to intSettingMeta("somenumbrr", 120422, 0, false),
         )

@@ -14,6 +14,8 @@ import org.joml.Vector3d
 import org.joml.Vector3dc
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.properties.ShipId
+import org.valkyrienskies.mod.common.dimensionId
+import org.valkyrienskies.mod.common.shipObjectWorld
 import java.lang.Math.toRadians
 import kotlin.math.cos
 import kotlin.math.sin
@@ -192,9 +194,9 @@ object OttUtils {
     } // if i ever need to use those again ima just put them in seperate files, NO IDEA why normal .toVector3d or .toVec3 didnt want to work here
 
     fun getDimID(serverLevel: ServerLevel): ShipId? {
-        val dimID = KontraptionVSUtils.dimensionID(serverLevel)
-        val dimshipID = KontraptionVSUtils.getShipObjectWorld(serverLevel).dimensionToGroundBodyIdImmutable[dimID]
-        return dimshipID
+        val dimensionId = serverLevel.dimensionId
+        val groundBodyMap = serverLevel.shipObjectWorld.dimensionToGroundBodyIdImmutable
+        return  groundBodyMap[dimensionId] ?: 0L
     }
 
     fun canInesrtItemStack(

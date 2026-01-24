@@ -4,10 +4,12 @@ package net.illuc.kontraption.gui
 
 import net.illuc.kontraption.Kontraption
 import net.illuc.kontraption.network.to_server.PacketKontraptionScreen
-import net.illuc.kontraption.ship.KontraptionBConfigControl
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD.ConfigBlock
 import net.illuc.kontraption.util.guiutils.SliderButton
 import net.illuc.kontraption.util.guiutils.TextField
 import net.illuc.kontraption.util.guiutils.ToggleButton
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD.BlockSetting
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
@@ -46,16 +48,16 @@ class ShipTerminalScreen(
     private val buttonMap = mutableListOf<Button>()
 
     // Btn maps
-    private val toggleButtons = mutableMapOf<KontraptionBConfigControl.BlockSetting.BooleanSetting, ToggleButton>()
-    private val sliderButtons = mutableMapOf<KontraptionBConfigControl.BlockSetting.IntSetting, SliderButton>()
-    private val buttonBlockMap = mutableMapOf<Button, KontraptionBConfigControl.ConfigBlock>()
-    private val textFields = mutableMapOf<KontraptionBConfigControl.BlockSetting.StringSetting, TextField>()
+    private val toggleButtons = mutableMapOf<BlockSetting.BooleanSetting, ToggleButton>()
+    private val sliderButtons = mutableMapOf<BlockSetting.IntSetting, SliderButton>()
+    private val buttonBlockMap = mutableMapOf<Button, ConfigBlock>()
+    private val textFields = mutableMapOf<BlockSetting.StringSetting, TextField>()
 
     private lateinit var blockListPanel: net.illuc.kontraption.util.guiutils.ListPanel
 
     private var selectedBlockInd = 0
 
-    private var currentSettingsBlock: KontraptionBConfigControl.ConfigBlock? = null
+    private var currentSettingsBlock: ConfigBlock? = null
     private lateinit var saveButton: Button
 
     override fun init() {
@@ -98,11 +100,11 @@ class ShipTerminalScreen(
                 .searchBarHeight((imageHeight * 0.05f).toInt())
                 .build()
 
-        val blocks = menz.configBlocks
+        val blocks: List<ConfigBlock> = menz.configBlocks
         for ((i, block) in blocks.withIndex()) {
             val customName =
                 block.settings
-                    .filterIsInstance<KontraptionBConfigControl.BlockSetting.StringSetting>()
+                    .filterIsInstance<BlockSetting.StringSetting>()
                     .firstOrNull { it.name == "name" }
                     ?.value
             val blockName = customName?.takeIf { it.isNotBlank() } ?: Component.translatable(block.blockId).string
@@ -121,34 +123,37 @@ class ShipTerminalScreen(
         }
         addRenderableWidget(blockListPanel)
         saveButton =
-            Button
-                .builder(Component.literal("SAVE SETTINGS")) {
-                    val blk = menz.configBlocks.getOrNull(selectedBlockInd) ?: return@builder
-                    val updatedSettings: MutableList<KontraptionBConfigControl.BlockSetting<*>> =
-                        blk.settings
-                            .map {
-                                when (it) {
-                                    is KontraptionBConfigControl.BlockSetting.BooleanSetting ->
-                                        KontraptionBConfigControl.BlockSetting.BooleanSetting(it.name, it.value)
-                                    is KontraptionBConfigControl.BlockSetting.IntSetting ->
-                                        KontraptionBConfigControl.BlockSetting.IntSetting(it.name, it.value, it.maxVal, it.minVal, it.scaled) // we dont need to send it all back? but idk how to do it other way
-                                    is KontraptionBConfigControl.BlockSetting.StringSetting ->
-                                        KontraptionBConfigControl.BlockSetting.StringSetting(it.name, it.value)
-                                }
-                            }.toMutableList()
+            Button.builder(Component.literal("SAVE SETTINGS")) {
+                val blk = menz.configBlocks.getOrNull(selectedBlockInd) ?: return@builder
 
-                    val updatedBlock = KontraptionBConfigControl.ConfigBlock(blk.pos, updatedSettings, blk.blockId)
-                    Kontraption.packetHandler().sendToServer(PacketKontraptionScreen(updatedBlock))
-                    val newName =
-                        updatedSettings
-                            .filterIsInstance<KontraptionBConfigControl.BlockSetting.StringSetting>()
-                            .firstOrNull { it.name == "name" }
-                            ?.value
-                            ?.takeIf { it.isNotBlank() }
-                            ?: Component.translatable(blk.blockId).string
-                    buttonMap.getOrNull(selectedBlockInd)?.message = Component.literal(newName) // sketchy and is getting 100% replaced with proper button class xd
-                }.bounds(panelX + SIDEGAP, panelY + imageHeight - 30, (imageWidth * 0.2f).toInt(), 20)
-                .build()
+                val updatedBlock =
+                    ConfigBlock(
+                        blk.pos,
+                        blk.settings,
+                        blk.blockId
+                    )
+
+                Kontraption.packetHandler()
+                    .sendToServer(PacketKontraptionScreen(updatedBlock))
+
+                val newName =
+                    blk.settings
+                        .filterIsInstance<BlockSetting.StringSetting>()
+                        .firstOrNull { it.name == "name" }
+                        ?.value
+                        ?.takeIf { it.isNotBlank() }
+                        ?: Component.translatable(blk.blockId).string
+
+                buttonMap.getOrNull(selectedBlockInd)?.message =
+                    Component.literal(newName)
+
+            }.bounds(
+                panelX + SIDEGAP,
+                panelY + imageHeight - 30,
+                (imageWidth * 0.2f).toInt(),
+                20
+            ).build()
+
 
         addRenderableWidget(saveButton)
     }
@@ -223,11 +228,11 @@ class ShipTerminalScreen(
         textFields.clear()
     }
 
-    private fun rebuildSettings(block: KontraptionBConfigControl.ConfigBlock) {
+    private fun rebuildSettings(block: ConfigBlock) {
         clearLists()
         for (setting in block.settings) {
             when (setting) {
-                is KontraptionBConfigControl.BlockSetting.BooleanSetting -> {
+                is BlockSetting.BooleanSetting -> {
                     val toggle =
                         ToggleButton
                             .Builder(0, 0, 40, 20)
@@ -238,7 +243,7 @@ class ShipTerminalScreen(
                     toggleButtons[setting] = toggle
                     addRenderableWidget(toggle)
                 }
-                is KontraptionBConfigControl.BlockSetting.IntSetting -> {
+                is BlockSetting.IntSetting -> {
                     val iniVal = setting.value.toDouble()
                     val slider =
                         SliderButton
@@ -253,7 +258,7 @@ class ShipTerminalScreen(
                     sliderButtons[setting] = slider
                     addRenderableWidget(slider)
                 }
-                is KontraptionBConfigControl.BlockSetting.StringSetting -> {
+                is BlockSetting.StringSetting -> {
                     val textField =
                         TextField
                             .Builder(0, 0, 100, 20)
@@ -312,7 +317,7 @@ class ShipTerminalScreen(
             GG.drawString(font, setting.name, panelX + SIDEGAP + 4, settingY + TEXTPOSOFF, TEXTCOLOR, false)
 
             when (setting) {
-                is KontraptionBConfigControl.BlockSetting.BooleanSetting -> {
+                is BlockSetting.BooleanSetting -> {
                     val rightEdgeX = panelX + panelW - SIDEGAP - RIGHTOFFET
                     val btnWidth = 40
                     val btnHeight = 20
@@ -320,14 +325,14 @@ class ShipTerminalScreen(
                     val btnY = settingY + (boxHeight - btnHeight) / 2
                     toggleButtons[setting]?.setPosition(btnX, btnY)
                 }
-                is KontraptionBConfigControl.BlockSetting.IntSetting -> {
+                is BlockSetting.IntSetting -> {
                     val sliderWidth = 100
                     val sliderHeight = 20
                     val sliderX = panelX + panelW - SIDEGAP - RIGHTOFFET - sliderWidth
                     val sliderY = settingY + (boxHeight - sliderHeight) / 2
                     sliderButtons[setting]?.setPosition(sliderX, sliderY)
                 }
-                is KontraptionBConfigControl.BlockSetting.StringSetting -> {
+                is BlockSetting.StringSetting -> {
                     val textWidth = 100
                     val textHeight = 20
                     val fieldX = panelX + panelW - SIDEGAP - RIGHTOFFET - textWidth

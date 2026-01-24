@@ -13,14 +13,13 @@ class ConnectorPeripheral(
 ) : IDynamicPeripheral {
     private val attachedComputers = mutableSetOf<IComputerAccess>()
 
-    override fun getType(): String = "Connector"
+    override fun getType(): String = "connector"
 
     override fun getMethodNames(): Array<String> =
         arrayOf(
             "connect",
             "disconnect",
             "isConnected",
-            "getConnectionID",
             "enableCC",
             "disableCC",
         )
@@ -29,9 +28,8 @@ class ConnectorPeripheral(
         const val CONNECT = 0
         const val DISCONNECT = 1
         const val IS_CONNECTED = 2
-        const val GET_ID = 3
-        const val ENABLE_CC = 4
-        const val DISABLE_CC = 5
+        const val ENABLE_CC = 3
+        const val DISABLE_CC = 4
     }
     // Using magicc numbers WAS annoying
 
@@ -68,7 +66,6 @@ class ConnectorPeripheral(
 
             IS_CONNECTED -> MethodResult.of(blockEntity.isConnected)
 
-            GET_ID -> MethodResult.of(blockEntity.conid)
 
             ENABLE_CC -> {
                 blockEntity.underCC = true

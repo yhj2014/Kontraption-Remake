@@ -1,14 +1,13 @@
 package net.illuc.kontraption.gui
 
 import net.illuc.kontraption.Kontraption
-import net.illuc.kontraption.ship.KontraptionBConfigControl
 import net.illuc.kontraption.util.readConfigBlocks
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.item.ItemStack
-
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD.ConfigBlock
 class ShipTerminalMenu(
     id: Int,
     playerInventory: Inventory,
@@ -21,7 +20,7 @@ class ShipTerminalMenu(
 
     override fun stillValid(p0: Player): Boolean = true
 
-    val configBlocks: List<KontraptionBConfigControl.ConfigBlock> = buf?.readConfigBlocks() ?: listOf()
+    val configBlocks: List<ConfigBlock> = buf?.readConfigBlocks() ?: listOf()
 
     companion object {
         fun create(

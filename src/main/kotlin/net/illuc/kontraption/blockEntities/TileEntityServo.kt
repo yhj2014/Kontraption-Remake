@@ -5,12 +5,12 @@ import net.illuc.kontraption.KontraptionBlocks
 import net.minecraft.core.BlockPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.level.block.state.BlockState
-import org.valkyrienskies.core.apigame.constraints.VSConstraintId
+import org.valkyrienskies.core.internal.joints.VSJointId
 
 class TileEntityServo(pos: BlockPos?, state: BlockState?) : TileEntityMekanism(KontraptionBlocks.SERVO, pos, state) {
     private var shipID: Long = -1
-    var hingeId: VSConstraintId? = null
-    var attachmentConstraintId: VSConstraintId? = null
+    var hingeId: VSJointId? = null
+    var attachmentConstraintId: VSJointId? = null
     var otherPos: BlockPos? = null
     var shipIds: List<Long>? = null
 

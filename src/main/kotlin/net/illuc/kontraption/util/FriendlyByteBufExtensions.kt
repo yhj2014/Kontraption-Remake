@@ -1,7 +1,9 @@
 package net.illuc.kontraption.util
 
-import net.illuc.kontraption.ship.KontraptionBConfigControl.BlockSetting
-import net.illuc.kontraption.ship.KontraptionBConfigControl.ConfigBlock
+import net.illuc.kontraption.ship.KVec3i
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD.ConfigBlock
+import net.illuc.kontraption.ship.KontraptionBConfigControlOLD.BlockSetting
 import net.minecraft.network.FriendlyByteBuf
 import org.joml.Vector3i
 
@@ -10,7 +12,9 @@ import org.joml.Vector3i
 fun FriendlyByteBuf.writeConfigBlocks(blocks: List<ConfigBlock>) {
     writeVarInt(blocks.size)
     for (block in blocks) {
-        writeBlockPos(block.pos.toBlockPos())
+        writeVarInt(block.pos.x)
+        writeVarInt(block.pos.y)
+        writeVarInt(block.pos.z)
         writeUtf(block.blockId)
         writeVarInt(block.settings.size)
         for (setting in block.settings) {
@@ -41,7 +45,12 @@ fun FriendlyByteBuf.readConfigBlocks(): List<ConfigBlock> {
     val blocks = mutableListOf<ConfigBlock>()
 
     repeat(count) {
-        val pos = readBlockPos()
+        val pos =
+            KVec3i(
+                readVarInt(),
+                readVarInt(),
+                readVarInt()
+            )
         val blockId = readUtf()
         val settingsCount = readVarInt()
         val settings = mutableListOf<BlockSetting<*>>()
@@ -67,28 +76,29 @@ fun FriendlyByteBuf.readConfigBlocks(): List<ConfigBlock> {
             settings.add(setting)
         }
 
-        blocks.add(ConfigBlock(pos.toJOML(), settings, blockId))
+        blocks.add(ConfigBlock(pos, settings, blockId))
     }
 
     return blocks
 }
 
 fun FriendlyByteBuf.writeConfigBlock(block: ConfigBlock) {
-    writeInt(block.pos.x)
-    writeInt(block.pos.y)
-    writeInt(block.pos.z)
+    writeVarInt(block.pos.x)
+    writeVarInt(block.pos.y)
+    writeVarInt(block.pos.z)
+
     writeUtf(block.blockId)
-    writeInt(block.settings.size)
+
+    writeVarInt(block.settings.size)
     for (setting in block.settings) {
+        writeUtf(setting.name)
         when (setting) {
             is BlockSetting.BooleanSetting -> {
                 writeUtf("boolean")
-                writeUtf(setting.name)
                 writeBoolean(setting.value)
             }
             is BlockSetting.IntSetting -> {
                 writeUtf("int")
-                writeUtf(setting.name)
                 writeVarInt(setting.value)
                 writeVarInt(setting.minVal)
                 writeVarInt(setting.maxVal)
@@ -96,7 +106,6 @@ fun FriendlyByteBuf.writeConfigBlock(block: ConfigBlock) {
             }
             is BlockSetting.StringSetting -> {
                 writeUtf("string")
-                writeUtf(setting.name)
                 writeUtf(setting.value)
             }
         }
@@ -104,31 +113,27 @@ fun FriendlyByteBuf.writeConfigBlock(block: ConfigBlock) {
 }
 
 fun FriendlyByteBuf.readConfigBlock(): ConfigBlock {
-    val x = readInt()
-    val y = readInt()
-    val z = readInt()
-    val pos = Vector3i(x, y, z)
+    val pos = KVec3i(readVarInt(), readVarInt(), readVarInt())
 
     val blockId = readUtf()
-
-    val settingsCount = readInt()
+    val settingsCount = readVarInt()
     val settings = mutableListOf<BlockSetting<*>>()
+
     repeat(settingsCount) {
-        val type = readUtf()
         val name = readUtf()
-        val setting =
-            when (type) {
-                "boolean" -> BlockSetting.BooleanSetting(name, readBoolean())
-                "int" -> {
-                    val value = readVarInt()
-                    val minVal = readVarInt()
-                    val maxVal = readVarInt()
-                    val scaled = readBoolean()
-                    BlockSetting.IntSetting(name, value, maxVal, minVal, scaled)
-                }
-                "string" -> BlockSetting.StringSetting(name, readUtf())
-                else -> throw IllegalArgumentException("Unknown BlockSetting type: $type")
-            }
+        val type = readUtf()
+        val setting = when (type) {
+            "boolean" -> BlockSetting.BooleanSetting(name, readBoolean())
+            "int" -> BlockSetting.IntSetting(
+                name,
+                readVarInt(),
+                readVarInt(),
+                readVarInt(),
+                readBoolean()
+            )
+            "string" -> BlockSetting.StringSetting(name, readUtf())
+            else -> error("Unknown BlockSetting type: $type")
+        }
         settings.add(setting)
     }
 

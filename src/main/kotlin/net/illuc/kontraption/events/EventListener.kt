@@ -5,8 +5,10 @@ import net.illuc.kontraption.ship.KontraptionKeyBlockControl
 import net.illuc.kontraption.util.toBlockPos
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.eventbus.api.SubscribeEvent
+import org.valkyrienskies.core.api.util.GameTickOnly
 
 object EventListener {
+    @OptIn(GameTickOnly::class)
     @SubscribeEvent
     fun onKeyEvent(event: KeyBindEvent) {
         val level = event.player.level()

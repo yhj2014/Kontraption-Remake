@@ -22,7 +22,7 @@ class KontraptionConfig internal constructor() : BaseMekanismConfig() {
     val toolgunChargeRate: CachedFloatingLongValue
     val dampeningStrength: CachedDoubleValue
     val zeroGravity: CachedBooleanValue
-    val dampeningP: CachedDoubleValue
+    val thrusterResponse: CachedDoubleValue
     val dampeningI: CachedDoubleValue
     val dampeningD: CachedDoubleValue
 
@@ -124,7 +124,7 @@ class KontraptionConfig internal constructor() : BaseMekanismConfig() {
 
         // PID Settings for Inertia Dampener
         builder.comment("Inertia Dampener PID Settings").push("dampener")
-        dampeningP =
+        thrusterResponse =
             CachedDoubleValue.wrap(
                 this,
                 builder

@@ -9,17 +9,12 @@ import mekanism.common.capabilities.energy.MachineEnergyContainer
 import mekanism.common.capabilities.holder.energy.EnergyContainerHelper
 import mekanism.common.capabilities.holder.energy.IEnergyContainerHolder
 import mekanism.common.util.MekanismUtils
-import net.illuc.kontraption.Kontraption
 import net.illuc.kontraption.KontraptionBlocks
 import net.illuc.kontraption.ThrusterInterface
 import net.illuc.kontraption.config.KontraptionConfigs
-import net.illuc.kontraption.ship.KontraptionBConfigControl
 import net.illuc.kontraption.util.ControllableTileEntity
-import net.illuc.kontraption.util.KontraptionVSUtils
-import net.illuc.kontraption.util.toJOML
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.state.BlockState
@@ -35,7 +30,7 @@ class TileEntityIonThruster(
     override var thrusterLevel: Level? = null
     override val worldPosition: BlockPos? = pos
     override val forceDirection: Direction = getDirection().opposite
-    override var powered: Boolean = true
+    override var powered: Boolean = false//annoying
     override val thrusterPower: Double = KontraptionConfigs.kontraption.ionThrust.get()
     override val basePower: Double = KontraptionConfigs.kontraption.ionThrust.get()
     override var currentThrust: Double = 0.0

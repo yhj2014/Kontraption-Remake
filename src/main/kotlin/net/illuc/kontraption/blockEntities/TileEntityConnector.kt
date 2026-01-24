@@ -4,11 +4,13 @@ import mekanism.common.tile.base.TileEntityMekanism
 import net.illuc.kontraption.Kontraption
 import net.illuc.kontraption.KontraptionBlocks
 import net.illuc.kontraption.peripherals.ConnectorPeripheral
-import net.illuc.kontraption.util.KontraptionVSUtils
-import net.illuc.kontraption.util.KontraptionVSUtils.getShipObjectManagingPos
 import net.illuc.kontraption.util.OttUtils
 import net.illuc.kontraption.util.OttUtils.fV3V3d
 import net.illuc.kontraption.util.OttUtils.fV3dV3
+import net.illuc.kontraption.util.gtpa
+import net.illuc.kontraption.util.toJOMLD
+import net.illuc.kontraption.util.vsutils.ConnectorControllers
+import net.illuc.kontraption.util.vsutils.makePose
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.nbt.CompoundTag
@@ -22,10 +24,14 @@ import net.minecraft.world.phys.Vec3
 import net.minecraftforge.common.capabilities.Capability
 import net.minecraftforge.common.util.LazyOptional
 import net.minecraftforge.fml.ModList
+import org.joml.Quaterniond
 import org.joml.Vector3d
 import org.valkyrienskies.core.api.ships.ServerShip
 import org.valkyrienskies.core.api.ships.properties.ShipId
-import org.valkyrienskies.core.apigame.constraints.VSAttachmentConstraint
+import org.valkyrienskies.core.api.util.GameTickOnly
+import org.valkyrienskies.core.api.util.PhysTickOnly
+import org.valkyrienskies.core.internal.joints.*
+import org.valkyrienskies.mod.common.getLoadedShipManagingPos
 
 // Comment for CEO, im not even throwing that BAD model i did
 class TileEntityConnector(
@@ -36,19 +42,19 @@ class TileEntityConnector(
     private val peripheralCapability = LazyOptional.of { peripheral }
 
     // TODO: ADD THIS TO GODFORSAKEN CONFIG LIST(SHIP CONFIG)
-    var conid: Int = 666
     var isConnected = false
-    var underCC = false
     var connectedTo: BlockPos? = null
+    var underCC = false
 
-    val vectorBlocpos: Vector3d
-        get() = Vector3d(blockPos.x.toDouble(), blockPos.y.toDouble(), blockPos.z.toDouble())
+    private var cachedTarget: BlockPos? = null
+    private var cacheCooldown = 0
 
     private val sLevel: ServerLevel?
         get() = level as? ServerLevel
 
+    @OptIn(GameTickOnly::class)
     private val ship: ServerShip?
-        get() = sLevel?.let { getShipObjectManagingPos(it, blockPos) }
+        get() = (level as? ServerLevel)?.getLoadedShipManagingPos(blockPos)
 
     override fun <T> getCapability(
         capability: Capability<T>,
@@ -66,16 +72,10 @@ class TileEntityConnector(
 
     override fun onLoad() {
         super.onLoad()
-        sLevel?.let {
-            if (isConnected && connectedTo != null) {
-                val other = it.getBlockEntity(connectedTo!!) as? TileEntityConnector
-                if (other != null && !other.isConnected) {
-                    connectTo(other)
-                } else {
-                    isConnected = false
-                    connectedTo = null
-                }
-            }
+        val level = sLevel ?: return
+        if (!level.isClientSide && isConnected && connectedTo != null) {
+            ConnectorControllers.get(level)
+                .connect(blockPos, connectedTo!!)
         }
     }
 
@@ -101,95 +101,72 @@ class TileEntityConnector(
 
         return null
     }
+    private fun findTarget(): TileEntityConnector? {
+        if (cacheCooldown-- > 0) {
+            return cachedTarget?.let { level?.getBlockEntity(it) as? TileEntityConnector }
+        }
+        cacheCooldown = 10
+        val hit = rayTrace(2.5) as? TileEntityConnector
+        cachedTarget = hit?.blockPos
+        return hit
+    }
 
     override fun saveAdditional(tag: CompoundTag) {
         super.saveAdditional(tag)
-        tag.putInt("ConID", conid)
-        tag.putBoolean("isconnected", isConnected)
-        tag.putBoolean("undercc", underCC)
-        connectedTo?.let {
-            tag.putLong("connectedTo", it.asLong())
-        }
+        tag.putBoolean("isConnected", isConnected)
+        tag.putBoolean("underCC", underCC)//underCC exist purerly cuz im a moron and cant figure out how to switch between redstone and cc mode
+        connectedTo?.let { tag.putLong("connectedTo", it.asLong()) }
     }
 
     override fun load(tag: CompoundTag) {
         super.load(tag)
-        conid = tag.getInt("ConID")
-        isConnected = tag.getBoolean("isconnected")
-        underCC = tag.getBoolean("undercc")
-        if (tag.contains("connectedTo")) {
-            connectedTo = BlockPos.of(tag.getLong("connectedTo"))
-        }
-    }
-
-    private fun check(): Pair<BlockEntity?, ServerShip?>? {
-        if (level == null || level!!.isClientSide) return null
-        val target = rayTrace(2.5) ?: return null // Make range a config var? i mean blasting a ray cast each s could be bad? on ohter hand DRILL
-        val other = target as? TileEntityConnector ?: return null
-        return Pair(other, other.ship)
+        isConnected = tag.getBoolean("isConnected")
+        underCC = tag.getBoolean("underCC")
+        connectedTo =
+            if (tag.contains("connectedTo")) BlockPos.of(tag.getLong("connectedTo"))
+            else null
     }
 
     fun connect() {
-        if (isConnected || level?.isClientSide != false) return
+        if (level !is ServerLevel || isConnected) return
+        val other = findTarget() ?: return
 
-        val pair = check() ?: return
-        val (other, ship2) = pair
-        val otherConnector = other as? TileEntityConnector ?: return
+        val controller = ConnectorControllers.get(level as ServerLevel)
+        controller.connect(blockPos, other.blockPos)
 
-        connectTo(otherConnector, ship2)
+        isConnected = true
+        connectedTo = other.blockPos
+        setChanged()
     }
 
-    private fun connectTo(
-        other: TileEntityConnector,
-        ship2: ServerShip? = null,
-    ) {
-        if (this.isConnected || other.isConnected) return
 
-        val ship1 = this.ship ?: return
-        val sid2: ShipId = ship2?.id ?: OttUtils.getDimID(other.sLevel ?: return) ?: return
-
-        val constraint =
-            VSAttachmentConstraint(
-                ship1.id,
-                sid2,
-                compliance = 1e-10,
-                localPos0 = this.vectorBlocpos,
-                localPos1 = other.vectorBlocpos,
-                maxForce = 1e10,
-                fixedDistance = 0.5,
-            )
-
-        val cid = KontraptionVSUtils.getShipObjectWorld(sLevel ?: return).createNewConstraint(constraint) ?: return
-        this.conid = cid
-        other.conid = cid
-        this.connectedTo = other.blockPos
-        other.connectedTo = this.blockPos
-        this.isConnected = true
-        other.isConnected = true
-    }
 
     fun disconnect() {
-        sLevel?.let {
-            KontraptionVSUtils.getShipObjectWorld(it).removeConstraint(conid)
-        }
+        if (level !is ServerLevel) return
+        val controller = ConnectorControllers.get(level as ServerLevel)
+        controller.disconnect(blockPos)//TECHNICALLY YOU CAN UH JUST BREAK THE BLOCK TO FUCK UP CONNECTION, but fortunly Controller will disallow illegal connections sooo rejoin?
+
+
         isConnected = false
         connectedTo = null
+        setChanged()
     }
+
 
     fun tick() {
         if (!underCC && !isConnected && canConnect()) {
             connect()
         }
-    }
 
-    fun canConnect(): Boolean {
-        val hasSignal = level?.hasNeighborSignal(blockPos) == true
-        if (hasSignal && !isConnected) {
-            return true
-        }
-        if (!hasSignal && isConnected && !underCC) {
+        if (isConnected && !canConnect()) {
             disconnect()
         }
-        return false
     }
+
+
+    fun canConnect(): Boolean =
+        level?.hasNeighborSignal(blockPos) == true
+
+
+
 }

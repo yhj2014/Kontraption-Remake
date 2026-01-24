@@ -8,11 +8,16 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import org.joml.Quaterniond
 import org.joml.Vector3d
 import org.joml.Vector3i
+import org.valkyrienskies.core.api.VsBeta
+import org.valkyrienskies.core.api.attachment.getAttachment
 import org.valkyrienskies.core.api.ships.*
+import org.valkyrienskies.core.api.util.GameTickOnly
+import org.valkyrienskies.core.api.util.PhysTickOnly
+import org.valkyrienskies.core.api.world.PhysLevel
 import org.valkyrienskies.core.impl.game.ships.PhysShipImpl
 import java.util.concurrent.CopyOnWriteArrayList
 
-class KontraptionGyroControl : ShipForcesInducer {
+class KontraptionGyroControl : ShipPhysicsListener {
     data class Gyro(
         val position: Vector3i,
         val tier: Double,
@@ -24,40 +29,6 @@ class KontraptionGyroControl : ShipForcesInducer {
     private var targetStrength = 1.0
 
     val gyroStrength = 100000.0
-
-    override fun applyForces(physShip: PhysShip) {
-        physShip as PhysShipImpl
-
-        if (KontraptionConfigs.kontraption.zeroGravity.get()) {
-            physShip.applyInvariantForce(Vector3d(0.0, physShip.inertia.shipMass * 10, 0.0))
-        }
-        if (gyros.size != 0) {
-            val totalPower = gyroStrength * gyros.size * targetStrength
-
-            val rotDif =
-                targetRotation
-                    .mul(physShip.transform.shipToWorldRotation.invert(Quaterniond()), Quaterniond())
-                    .normalize()
-                    .invert()
-
-            // Blackmagic ask triode
-            val idealOmega = Vector3d(rotDif.x() * 2.0, rotDif.y() * 2.0, rotDif.z() * 2.0)
-            if (rotDif.w() > 0) idealOmega.mul(-1.0)
-
-            idealOmega.sub(physShip.poseVel.omega)
-
-            val idealTorque =
-                physShip.poseVel.rot.transform(
-                    physShip.inertia.momentOfInertiaTensor.transform(
-                        physShip.poseVel.rot.transformInverse(idealOmega, Vector3d()),
-                    ),
-                )
-
-            idealTorque.mul(KontraptionConfigs.kontraption.gyroTorqueStrength.get())
-
-            physShip.applyInvariantTorque(idealTorque)
-        }
-    }
 
     fun addGyro(
         pos: BlockPos,
@@ -88,9 +59,43 @@ class KontraptionGyroControl : ShipForcesInducer {
         this.targetStrength = power
     }
 
+    @OptIn(PhysTickOnly::class)
+    override fun physTick(physShip: PhysShip, physLevel: PhysLevel) {
+        if (KontraptionConfigs.kontraption.zeroGravity.get()) {
+            physShip.applyWorldForce(Vector3d(0.0, physShip.mass * 10, 0.0))
+        }
+        if (gyros.isNotEmpty()) {
+            val totalPower = gyroStrength * gyros.size * targetStrength
+
+            val rotDif =
+                targetRotation
+                    .mul(physShip.transform.shipToWorldRotation.invert(Quaterniond()), Quaterniond())
+                    .normalize()
+                    .invert()
+
+            // Blackmagic ask triode
+            val idealOmega = Vector3d(rotDif.x() * 2.0, rotDif.y() * 2.0, rotDif.z() * 2.0)
+            if (rotDif.w() > 0) idealOmega.mul(-1.0)
+
+            idealOmega.sub(physShip.angularVelocity)
+            
+            val idealTorque =
+                physShip.transform.rotation.transform(
+                    physShip.momentOfInertia.transform(
+                        physShip.transform.rotation.transformInverse(idealOmega, Vector3d()),
+                    ),
+                )
+
+            idealTorque.mul(KontraptionConfigs.kontraption.gyroTorqueStrength.get())
+
+            physShip.applyInvariantTorque(idealTorque)
+        }
+    }
+
     companion object {
-        fun getOrCreate(ship: ServerShip): KontraptionGyroControl =
+        @OptIn(GameTickOnly::class, VsBeta::class)
+        fun getOrCreate(ship: LoadedServerShip): KontraptionGyroControl =
             ship.getAttachment<KontraptionGyroControl>()
-                ?: KontraptionGyroControl().also { ship.saveAttachment(it) }
+                ?: KontraptionGyroControl().also { ship.setAttachment(it) }
     }
 }

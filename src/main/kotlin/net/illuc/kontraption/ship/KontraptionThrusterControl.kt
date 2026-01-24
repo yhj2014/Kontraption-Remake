@@ -10,15 +10,20 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import org.joml.Vector3d
 import org.joml.Vector3i
+import org.valkyrienskies.core.api.VsBeta
+import org.valkyrienskies.core.api.attachment.getAttachment
 import org.valkyrienskies.core.api.ships.*
-import org.valkyrienskies.core.impl.game.ships.PhysShipImpl
+import org.valkyrienskies.core.api.util.GameTickOnly
+import org.valkyrienskies.core.api.util.PhysTickOnly
+import org.valkyrienskies.core.api.world.PhysLevel
 import thedarkcolour.kotlinforforge.forge.vectorutil.v3d.toVector3d
 import thedarkcolour.kotlinforforge.forge.vectorutil.v3d.toVector3f
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
+import kotlin.math.min
 
 @JsonIgnoreProperties(ignoreUnknown = true) // FOR MY SANITY
-class KontraptionThrusterControl : ShipForcesInducer {
+class KontraptionThrusterControl : ShipPhysicsListener {
     data class Thruster(
         val position: Vector3i,
         val forceDirection: Vector3d,
@@ -38,118 +43,50 @@ class KontraptionThrusterControl : ShipForcesInducer {
     private var lastVelo = Vector3d(0.0, 0.0, 0.0)
     private var accError = Vector3d(0.0, 0.0, 0.0)
     private var playerInput = Vector3d() // have to store it bc we cant just apply force anywhere
+    private var stayInPlace = false
 
-    override fun applyForces(physShip: PhysShip) {
-        physShip as PhysShipImpl
+    @OptIn(PhysTickOnly::class, PhysTickOnly::class, VsBeta::class)
+    override fun physTick(physShip: PhysShip, physLevel: PhysLevel) {
 
-        val velocity = Vector3d(physShip.poseVel.vel)
-        val mass = physShip.inertia.shipMass
-        // val airResistance = velocity.mul(-mass * RESISTSTRENGHT)
-        // physShip.applyInvariantForce(airResistance)
-        val currentVelocity = physShip.poseVel.vel
-        val velocityDelta = Vector3d(currentVelocity).sub(lastVelo)
-        lastVelo.set(currentVelocity)
+        val velocity = Vector3d(physShip.velocity)
+        val mass = physShip.mass
+        val maxSpeed = KontraptionConfigs.kontraption.thrusterSpeedLimit.get()
 
-        applyThrusterDampener(physShip, velocityDelta)
-        thrusters.forEach { (position, forceDirection, _, be) ->
-            val forceStrength = be.currentThrust
-            if (forceStrength != 0.0) {
-                Kontraption.LOGGER.debug("Thruster {} has currentThrust={}", be, forceStrength)
-                val tForce = physShip.transform.shipToWorld.transformDirection(forceDirection, Vector3d())
-                val tPos = Vector3d(0.0, 0.0, 0.0)
+        val targetVelocity =
+            if (stayInPlace)
+                Vector3d(0.0, 0.0, 0.0)
+            else
+                Vector3d(playerInput).mul(maxSpeed)
 
-                if (tForce.isFinite) {
-                    var forceFinal = forceStrength * be.thrusterPower * 1000
-                    Kontraption.LOGGER.debug("Applying force {} * {}", tForce, forceFinal) // InteliJ idea
-                    be.powered = true
+        val velError = targetVelocity.sub(velocity, Vector3d())
+        if (velError.lengthSquared() < 0.0001){
+            thrusters.forEach { it.thruster.powered = false }
+            return
+        }
+        val response = KontraptionConfigs.kontraption.thrusterResponse.get()
+        val desiredAccel = velError.mul(response)
+        val desiredForce = desiredAccel.mul(mass)
 
-                    val isPlayerThrust = (
-                        playerInput.lengthSquared() > 0.001 &&
-                            tForce.dot(physShip.transform.shipToWorld.transformDirection(playerInput, Vector3d())) > 0.5
-                    )
+        thrusters.forEach { thr ->
+            val shipDir = thr.forceDirection
+            val worldDir = physShip.transform.shipToWorld
+                .transformDirection(shipDir, Vector3d())
 
-                    if (isPlayerThrust) {
-                        val thrustBufferRegion = 20
-                        val dropOffThreshold = CONFIGSPEEDLIMIT - thrustBufferRegion
-                        val dirVelocity = Vector3d(tForce).mul(physShip.poseVel.vel)
-                        val dotVelocity = tForce.dot(physShip.poseVel.vel)
+            val alignment = worldDir.dot(desiredForce)
 
-                        if (dirVelocity.length() > dropOffThreshold) {
-                            var dropoffCoefficient =
-                                ((dropOffThreshold - dirVelocity.length()) / thrustBufferRegion + 1)
-                                    .coerceIn(0.0, 1.0)
+            if (alignment > 0.0) {
+                val maxForce = thr.thruster.thrusterPower * KontraptionConfigs.kontraption.ionThrust.get()
+                val applied = min(alignment, maxForce)
 
-                            if (dotVelocity < 0) {
-                                dropoffCoefficient = 2 - dropoffCoefficient
-                            }
+                thr.thruster.powered = true
 
-                            forceFinal *= dropoffCoefficient
-                        }
-                    }
-                    Kontraption.LOGGER.debug("Aplying final force of {} and tForce of {}", forceFinal, tForce)
-                    physShip.applyInvariantForceToPos(tForce.mul(forceFinal), tPos)
-                }
+                physShip.applyWorldForce(
+                    worldDir.mul(applied, Vector3d())
+                )
             } else {
-                be.powered = false
+                thr.thruster.powered = false
             }
         }
-    }
-
-    private fun applyThrusterDampener(
-        physShip: PhysShipImpl,
-        velocityDelta: Vector3d,
-    ) {
-        val mass = physShip.inertia.shipMass
-        val config = KontraptionConfigs.kontraption
-
-        val worldToShip = physShip.transform.worldToShip
-        val shipToWorld = physShip.transform.shipToWorld
-
-        val shipError = worldToShip.transformDirection(Vector3d(physShip.poseVel.vel).negate(), Vector3d())
-
-        val newError = shipToWorld.transformDirection(shipError, Vector3d())
-
-        val strengthByDirection =
-            thrusters
-                .groupBy { it.forceDirection }
-                .mapValues { (_, group) -> group.sumOf { it.thruster.thrusterPower } }
-        val thrusterStrength = thrusters.sumOf { it.thruster.thrusterPower } // One is total and one is directional ship strenght
-
-        accError.add(Vector3d(newError).mul(0.1))
-
-        val derivative = velocityDelta.negate()
-
-        val dampeningForce =
-            Vector3d(newError)
-                .mul(config.dampeningP.get() * mass)
-                .add(Vector3d(accError).mul(config.dampeningI.get() * mass))
-                .add(derivative.mul(config.dampeningD.get() * mass))
-        if (abs(playerInput.x) > 0.1) dampeningForce.x = 0.0
-        if (abs(playerInput.y) > 0.1) dampeningForce.y = 0.0
-        if (abs(playerInput.z) > 0.1) dampeningForce.z = 0.0
-        if (abs(playerInput.x) > 0.1) accError.x = 0.0
-        if (abs(playerInput.y) > 0.1) accError.y = 0.0
-        if (abs(playerInput.z) > 0.1) accError.z = 0.0
-        val totalForce = Vector3d(dampeningForce)
-
-        if (playerInput.lengthSquared() > 0.001) {
-            val invertedInput = Vector3d(playerInput).mul(-1.0, 1.0, -1.0) // incase ima need pi later
-            totalForce.add(Vector3d(invertedInput).normalize().mul(thrusterStrength))
-        }
-
-        val requestedThrust = mutableMapOf<Vector3d, Double>()
-
-        Direction.entries.forEach { dir ->
-            val dirVecr = dir.normal.toJOMLD()
-            val worldDir = shipToWorld.transformDirection(dir.normal.toJOMLD(), Vector3d())
-            val dot = worldDir.dot(totalForce)
-            val avaibleStrn = strengthByDirection[dirVecr] ?: 0.0
-            if (dot > 0 && avaibleStrn > 0) {
-                requestedThrust[dir.normal.toJOMLD()] = (dot / avaibleStrn).coerceIn(0.0, 1.0)
-            }
-        }
-
-        assignThrustPerDirection(requestedThrust, false)
     }
 
     fun setDampenersState(st: Boolean) {
@@ -213,8 +150,9 @@ class KontraptionThrusterControl : ShipForcesInducer {
     }
 
     companion object {
-        fun getOrCreate(ship: ServerShip): KontraptionThrusterControl =
+        @OptIn(VsBeta::class, GameTickOnly::class)
+        fun getOrCreate(ship: LoadedServerShip): KontraptionThrusterControl =
             ship.getAttachment<KontraptionThrusterControl>()
-                ?: KontraptionThrusterControl().also { ship.saveAttachment(it) }
+                ?: KontraptionThrusterControl().also { ship.setAttachment(it) }
     }
 }

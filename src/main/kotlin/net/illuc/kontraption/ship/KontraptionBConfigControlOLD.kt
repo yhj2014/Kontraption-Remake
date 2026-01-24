@@ -12,23 +12,36 @@ import net.illuc.kontraption.util.toJOML
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.block.entity.BlockEntity
 import org.joml.Vector3i
-import org.valkyrienskies.core.api.ships.ServerShip
-import org.valkyrienskies.core.api.ships.getAttachment
-import org.valkyrienskies.core.api.ships.saveAttachment
+import org.valkyrienskies.core.api.VsBeta
+import org.valkyrienskies.core.api.attachment.getAttachment
+import org.valkyrienskies.core.api.ships.LoadedServerShip
+import org.valkyrienskies.core.api.util.GameTickOnly
 import java.util.concurrent.CopyOnWriteArrayList
-
+data class KVec3i(
+    val x: Int,
+    val y: Int,
+    val z: Int,
+) {
+    fun toJoml() = Vector3i(x, y, z)
+    //Yes mc has its own Vec3i but im WAYY to tired to even try if its serializable
+    companion object {
+        fun fromJoml(v: Vector3i) = KVec3i(v.x, v.y, v.z)
+    }
+}
 @JsonIgnoreProperties(ignoreUnknown = true)
-class KontraptionBConfigControl {
+class KontraptionBConfigControlOLD {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
     @JsonSubTypes(
         JsonSubTypes.Type(value = BlockSetting.BooleanSetting::class, name = "boolean"),
         JsonSubTypes.Type(value = BlockSetting.IntSetting::class, name = "int"),
         JsonSubTypes.Type(value = BlockSetting.StringSetting::class, name = "string"),
     )
+
     // IMA ABOUT TO PUT SERIALIZATION INTO MY [HYPERLINK BLOCKED]
     sealed class BlockSetting<T> {
         abstract val name: String
         abstract var value: T
+
 
         data class BooleanSetting
             @JsonCreator
@@ -65,23 +78,24 @@ class KontraptionBConfigControl {
     data class ConfigBlock
         @JsonCreator
         constructor(
-            @JsonProperty("pos") val pos: Vector3i,
+            @JsonProperty("pos") val pos: KVec3i,
             @JsonProperty("settings") val settings: MutableList<BlockSetting<*>>,
             @JsonProperty("blockId") val blockId: String,
         )
 
-    private val listeners = mutableMapOf<Vector3i, MutableList<(BlockSetting<*>) -> Unit>>() // have no clue if event system wont cause issues, buttt not my problem rn
+    @JsonIgnore
+    private val listeners = mutableMapOf<KVec3i, MutableList<(BlockSetting<*>) -> Unit>>() // have no clue if event system wont cause issues, buttt not my problem rn
     private val blockSettings = CopyOnWriteArrayList<ConfigBlock>()
 
     fun addListener(
-        pos: Vector3i,
+        pos: BlockPos,
         listener: (BlockSetting<*>) -> Unit,
     ) {
-        listeners.computeIfAbsent(pos) { mutableListOf() }.add(listener)
+        listeners.computeIfAbsent(pos.toKVec3i()) { mutableListOf() }.add(listener)
     }
 
-    fun removeListeners(pos: Vector3i) {
-        listeners.remove(pos)
+    fun removeListeners(pos: BlockPos) {
+        listeners.remove(pos.toKVec3i())
     }
 
     fun addConfigBlock(
@@ -90,11 +104,11 @@ class KontraptionBConfigControl {
         settings: List<BlockSetting<*>>,
     ) {
         val blockId = blockEntity?.blockState?.block?.descriptionId ?: "unknown"
-        blockSettings.add(ConfigBlock(pos.toJOML(), settings.toMutableList(), blockId))
+        blockSettings.add(ConfigBlock(pos.toKVec3i(), settings.toMutableList(), blockId))
     }
 
     fun removeConfigBlock(pos: BlockPos) {
-        blockSettings.removeAll { it.pos == pos.toJOML() }
+        blockSettings.removeAll { it.pos == pos.toKVec3i() }
     }
 
     // FUCKIN SERIALIZER AUTODETECTS GETS
@@ -106,7 +120,7 @@ class KontraptionBConfigControl {
         settingName: String,
         newValue: Any,
     ): Boolean {
-        val configBlock = blockSettings.find { it.pos == pos.toJOML() } ?: return false
+        val configBlock = blockSettings.find { it.pos == pos.toKVec3i() } ?: return false
         val setting = configBlock.settings.find { it.name == settingName } ?: return false
 
         return when (setting) {
@@ -141,7 +155,7 @@ class KontraptionBConfigControl {
         pos: BlockPos,
         newSettings: List<BlockSetting<*>>,
     ) {
-        val configBlock = blockSettings.find { it.pos == pos.toJOML() }
+        val configBlock = blockSettings.find { it.pos == pos.toKVec3i() }
         if (configBlock != null) {
             for (newSetting in newSettings) {
                 val existingSetting = configBlock.settings.find { it.name == newSetting.name }
@@ -166,17 +180,21 @@ class KontraptionBConfigControl {
     }
 
     companion object {
-        fun getOrCreate(ship: ServerShip): KontraptionBConfigControl = ship.getAttachment<KontraptionBConfigControl>() ?: KontraptionBConfigControl().also { ship.saveAttachment(it) }
+        @OptIn(GameTickOnly::class, VsBeta::class)
+        fun getOrCreate(ship: LoadedServerShip): KontraptionBConfigControlOLD = ship.getAttachment<KontraptionBConfigControlOLD>() ?: KontraptionBConfigControlOLD().also { ship.setAttachment(it) }
 
         @JvmStatic
         @JsonCreator
         fun create(
-            @JsonProperty("blockSettings") blockSettings: CopyOnWriteArrayList<ConfigBlock>?,
-        ): KontraptionBConfigControl =
-            KontraptionBConfigControl().apply {
+            @JsonProperty("blockSettings") blockSettings: List<ConfigBlock>?,
+        ): KontraptionBConfigControlOLD =
+            KontraptionBConfigControlOLD().apply {
                 if (blockSettings != null) {
                     this.blockSettings.addAll(blockSettings)
                 }
             }
     }
+}
+fun BlockPos.toKVec3i() : KVec3i {
+    return KVec3i(x, y, z)
 }

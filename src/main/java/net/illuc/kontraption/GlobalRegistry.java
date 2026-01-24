@@ -25,7 +25,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
-import org.valkyrienskies.core.impl.shadow.B;
 
 import java.io.IOException;
 import java.util.Arrays;

@@ -9,9 +9,11 @@ import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.world.entity.player.Player
 import net.minecraftforge.network.NetworkEvent
 import org.joml.Vector3dc
+import org.valkyrienskies.core.api.VsBeta
+import org.valkyrienskies.core.api.attachment.getAttachment
 import org.valkyrienskies.core.api.ships.LoadedServerShip
-import org.valkyrienskies.core.api.ships.getAttachment
 import org.valkyrienskies.core.api.ships.setAttachment
+import org.valkyrienskies.core.api.util.GameTickOnly
 import org.valkyrienskies.core.util.readVec3d
 import org.valkyrienskies.core.util.writeVec3d
 
@@ -24,6 +26,7 @@ class PacketKontraptionDriving(
     private val key = 0
     private val add = false
 
+    @OptIn(GameTickOnly::class, VsBeta::class)
     override fun handle(context: NetworkEvent.Context) {
         val player: Player? = context.sender
         var b: Byte = 0
