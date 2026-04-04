@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import org.joml.Vector3d;
+import org.joml.Vector3ic;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.core.api.world.ServerShipWorld;
 import org.valkyrienskies.core.internal.ShipTeleportData;
@@ -49,7 +50,19 @@ public class KontraptionVSUtils {
 
 
     public static void createNewShipWithBlocks(BlockPos pos, DenseBlockPosSet set, ServerLevel level){
-        ShipAssemblyKt.createNewShipWithBlocks(pos, set, level);//TODO: Its structure now, get corners n shit
+
+        // use assembleToShip() method replace the outdated one to be compatible with VK 2.4.10
+        java.util.List<net.minecraft.core.BlockPos> blockList = new java.util.ArrayList<>();
+        for (org.joml.Vector3ic vec : set) {
+            blockList.add(new net.minecraft.core.BlockPos(vec.x(), vec.y(), vec.z()));
+        }
+        org.valkyrienskies.mod.common.assembly.ShipAssembler.INSTANCE.assembleToShip(
+                level,
+                blockList,
+                true,
+                1.0,
+                false
+        );
     }
     public static String dimensionID(ServerLevel level){
         return  VSGameUtilsKt.getDimensionId(level);

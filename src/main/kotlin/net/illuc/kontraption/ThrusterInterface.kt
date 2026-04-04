@@ -25,6 +25,8 @@ interface ThrusterInterface {
         if (level !is ServerLevel) return // INITAL FUCKIN SETUP
         // println("ENABLED")
         if (worldPosition != null) {
+            // maybe forget to switch "enabled" true, that cause all thrusters became unavailable
+            enabled = true
             val ship =
                 KontraptionVSUtils.getShipObjectManagingPos(level, bpos)
                     ?: KontraptionVSUtils.getShipManagingPos(level, bpos)

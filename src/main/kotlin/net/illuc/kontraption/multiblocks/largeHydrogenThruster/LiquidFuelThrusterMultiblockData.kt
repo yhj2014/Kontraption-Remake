@@ -1,6 +1,7 @@
 package net.illuc.kontraption.multiblocks.largeHydrogenThruster
 
 import mekanism.api.Action
+import mekanism.api.AutomationType
 import mekanism.api.chemical.attribute.ChemicalAttributeValidator
 import mekanism.api.chemical.gas.Gas
 import mekanism.api.chemical.gas.IGasTank
@@ -119,7 +120,7 @@ class LiquidFuelThrusterMultiblockData(
         }
 
         if (powered and enabled) {
-            if (Dist.DEDICATED_SERVER.isDedicatedServer and (thrusterLevel != null)) {
+            if (thrusterLevel is ServerLevel) {
                 particleDir =
                     if (ship == null) {
                         exhaustDirection.normal.multiply(innerVolume).toJOMLD()
@@ -139,8 +140,9 @@ class LiquidFuelThrusterMultiblockData(
         var storedFuel: Double = gasTank!!.stored + burnRemaining
         val powerPerc = currentThrust / thrusterPower
         val toBurn = thrusterPower * KontraptionConfigs.kontraption.liquidFuelConsumption.get() * powerPerc // Math.min(Math.min(1.0, storedFuel), fuelAssemblies * MekanismGeneratorsConfig.generators.burnPerAssembly.get())
-        storedFuel -= toBurn
-        if (storedFuel <= 0.0) {
+        // fix the default config problem with dirty way
+        val totalToBurn = ((toBurn + burnRemaining)/10000.0).coerceAtMost(gasTank!!.capacity.toDouble()-1)
+        if (storedFuel < totalToBurn) {
             if (enabled) {
                 disable()
             }
@@ -149,8 +151,13 @@ class LiquidFuelThrusterMultiblockData(
                 enable()
             }
         }
-        gasTank!!.setStackSize(storedFuel.toLong(), Action.EXECUTE)
-        burnRemaining = storedFuel % 1
+        //gasTank!!.setStackSize(storedFuel.toLong().coerceAtLeast(0), Action.EXECUTE)
+        // use extract method instead directly modify tankSize to avoid setting tankSize too small to restart the thruster
+        val extractAmount = totalToBurn.toLong()
+        if (extractAmount > 0L) {
+            gasTank!!.extract(extractAmount, Action.EXECUTE, AutomationType.INTERNAL)
+        }
+        burnRemaining = (totalToBurn - extractAmount).coerceAtLeast(0.0)
         // heatCapacitor.handleHeat(toBurn * MekanismGeneratorsConfig.generators.energyPerFissionFuel.get().doubleValue())
         // update previous burn
         lastBurnRate = toBurn
