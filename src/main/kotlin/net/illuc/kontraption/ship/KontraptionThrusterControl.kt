@@ -76,9 +76,12 @@ class KontraptionThrusterControl : ShipPhysicsListener {
 
             if (alignment > 0.0) {
                 val maxForce = thr.thruster.thrusterPower * KontraptionConfigs.kontraption.ionThrust.get()
+                // what is this meaning? xThrust power in config * ionThrust power? Is ion engine power as a power unit?
                 val applied = min(alignment, maxForce)
 
                 thr.thruster.powered = true
+                thr.thruster.currentThrust = applied
+                // update the currentThrust to which thrust actually applied (or the thruster will never consume any fuel)
 
                 physShip.applyWorldForce(
                     worldDir.mul(applied, Vector3d())
