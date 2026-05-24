@@ -3,7 +3,7 @@ package net.illuc.kontraption.events
 import net.illuc.kontraption.blockEntities.TileEntityKey
 import net.illuc.kontraption.ship.KontraptionKeyBlockControl
 import net.illuc.kontraption.util.toBlockPos
-import net.minecraftforge.common.MinecraftForge
+import net.minecraftforge.common.NeoForge
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import org.valkyrienskies.core.api.util.GameTickOnly
 
@@ -22,6 +22,6 @@ object EventListener {
     }
 
     fun register() {
-        MinecraftForge.EVENT_BUS.register(this)
+        NeoForge.EVENT_BUS.register(this)
     }
 }

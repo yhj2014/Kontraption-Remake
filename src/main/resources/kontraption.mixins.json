@@ -2,8 +2,8 @@
   "required": true,
   "minVersion": "0.8",
   "package": "net.illuc.kontraption.mixin",
-  "compatibilityLevel": "JAVA_17",
-  "refmap": "Kontraption.refmap.json",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "kontraption.refmap.json",
   "mixins": [
     "MixinLaser",
     "MixinRadiationManager",
@@ -17,6 +17,8 @@
     "MixinTileEntityDigitalMiner"
   ],
   "client": [
+    "MixinGameRenderer",
+    "MixinGender"
   ],
   "injectors": {
     "defaultRequire": 1

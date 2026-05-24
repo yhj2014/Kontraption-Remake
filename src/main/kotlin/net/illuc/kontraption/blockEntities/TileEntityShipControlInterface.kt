@@ -35,7 +35,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.level.block.HorizontalDirectionalBlock
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING
-import net.minecraftforge.common.MinecraftForge
+import net.minecraftforge.common.NeoForge
 import net.minecraftforge.common.capabilities.Capability
 import net.minecraftforge.common.util.LazyOptional
 import net.minecraftforge.fml.ModList
@@ -193,7 +193,7 @@ class TileEntityShipControlInterface(
                 for (i in keyBindings.indices) {
                     val isPressed = keyBindings[i]
                     if (isPressed != keyStates[i]) {
-                        MinecraftForge.EVENT_BUS.post(KeyBindEvent(i + 1, isPressed, entity.controllingPassenger as ServerPlayer, ship))
+                        NeoForge.EVENT_BUS.post(KeyBindEvent(i + 1, isPressed, entity.controllingPassenger as ServerPlayer, ship))
                         keyStates[i] = isPressed
                     }
                 }

@@ -55,58 +55,59 @@ import net.minecraft.world.entity.MobCategory
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.inventory.MenuType
 import net.minecraft.world.item.CreativeModeTab
-import net.minecraftforge.api.distmarker.Dist
-import net.minecraftforge.client.event.EntityRenderersEvent
-import net.minecraftforge.client.event.ModelEvent
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent
-import net.minecraftforge.common.MinecraftForge
-import net.minecraftforge.common.extensions.IForgeMenuType
-import net.minecraftforge.event.RegisterCommandsEvent
-import net.minecraftforge.event.TickEvent
-import net.minecraftforge.event.level.LevelEvent
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.ModLoadingContext
-import net.minecraftforge.fml.common.Mod
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber
-import net.minecraftforge.fml.event.config.ModConfigEvent
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
-import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent
-import net.minecraftforge.fml.event.lifecycle.InterModEnqueueEvent
-import net.minecraftforge.fml.loading.FMLEnvironment
-import net.minecraftforge.registries.DeferredRegister
-import net.minecraftforge.registries.ForgeRegistries
-import net.minecraftforge.registries.RegisterEvent
-import net.minecraftforge.registries.RegistryObject
-import net.minecraftforge.versions.forge.ForgeVersion.MOD_ID
+import net.neoforged.api.distmarker.Dist
+import net.neoforged.bus.api.IEventBus
+import net.neoforged.bus.api.SubscribeEvent
+import net.neoforged.neoforge.client.event.EntityRenderersEvent
+import net.neoforged.neoforge.client.event.ModelEvent
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent
+import net.neoforged.neoforge.common.NeoForge
+import net.neoforged.neoforge.common.extensions.IForgeMenuType
+import net.neoforged.neoforge.event.RegisterCommandsEvent
+import net.neoforged.neoforge.event.TickEvent
+import net.neoforged.neoforge.event.level.LevelEvent
+import net.neoforged.neoforge.fml.ModLoadingContext
+import net.neoforged.neoforge.fml.common.Mod
+import net.neoforged.neoforge.fml.common.Mod.EventBusSubscriber
+import net.neoforged.neoforge.fml.event.config.ModConfigEvent
+import net.neoforged.neoforge.fml.event.lifecycle.FMLClientSetupEvent
+import net.neoforged.neoforge.fml.event.lifecycle.FMLCommonSetupEvent
+import net.neoforged.neoforge.fml.event.lifecycle.FMLLoadCompleteEvent
+import net.neoforged.neoforge.fml.event.lifecycle.InterModEnqueueEvent
+import net.neoforged.neoforge.fml.loading.FMLEnvironment
+import net.neoforged.neoforge.registries.DeferredRegister
+import net.neoforged.neoforge.registries.NeoForgeRegistries
+import net.neoforged.neoforge.registries.RegisterEvent
+import net.neoforged.neoforge.registries.RegistryObject
+import net.neoforged.neoforge.network.registries.NetworkRegistry
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.valkyrienskies.core.api.VsBeta
 import org.valkyrienskies.mod.client.EmptyRenderer
 import org.valkyrienskies.mod.common.vsCore
-import thedarkcolour.kotlinforforge.forge.MOD_BUS
 
 @Mod(Kontraption.MODID)
-class Kontraption : IModModule {
-    val logger: Logger = LogManager.getLogger(Kontraption::class.java) // LOGGER FFS COUGHT too lazy to find where used
+class Kontraption(
+    private val eventBus: IEventBus,
+    private val modContainer: ModContainer,
+    private val dist: Dist
+) : IModModule {
+    val logger: Logger = LogManager.getLogger(Kontraption::class.java)
 
-    // Versioning
     val versionNumber: Version
     private val packetHandler: KontraptionPacketHandler
 
     private val KONTRAPTION_SHIP_MOUNTING_ENTITY_REGISTRY: RegistryObject<EntityType<KontraptionShipMountingEntity>>
-    private val ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, MODID)
+    private val ENTITIES = DeferredRegister.create(NeoForgeRegistries.ENTITY_TYPES, MODID)
     val TAB_REGISTER: DeferredRegister<CreativeModeTab> = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID)
-
-    // = TODO()
 
     init {
         instance = this
-        val modEventBus = MOD_BUS
-        MinecraftForge.EVENT_BUS.addListener(this::registerCommands)
+        val modEventBus = eventBus
+        NeoForge.EVENT_BUS.addListener(this::registerCommands)
         KontraptionConfigs.registerConfigs(ModLoadingContext.get())
-        if (FMLEnvironment.dist.isClient) {
+        if (dist.isClient) {
             modEventBus.addListener(::registerKeyBindings)
         }
         GlobalRegistry.EventInit(modEventBus)
@@ -118,15 +119,11 @@ class Kontraption : IModModule {
         ENTITIES.register(modEventBus)
         EventListener.register()
         KontraptionParticleTypes.PARTICLE_TYPES.register(modEventBus)
-        // GeneratorsFluids.FLUIDS.register(modEventBus)
-        // GeneratorsSounds.SOUND_EVENTS.register(modEventBus)
         KontraptionContainerTypes.CONTAINER_TYPES.register(modEventBus)
         KontraptionTileEntityTypes.TILE_ENTITY_TYPES.register(modEventBus)
         KontraptionSounds.SOUND_EVENTS.register(modEventBus)
-        // note for ottery: in future move to seperate file
         MENU_TYPES.register(modEventBus)
-        // we should version eariel ya know?
-        versionNumber = Version(ModLoadingContext.get().activeContainer)
+        versionNumber = Version(modContainer)
         packetHandler = KontraptionPacketHandler()
 
         KONTRAPTION_SHIP_MOUNTING_ENTITY_REGISTRY =
@@ -143,7 +140,7 @@ class Kontraption : IModModule {
         modEventBus.addListener(::registerModels)
         modEventBus.addListener(::registerBER)
         modEventBus.addListener(::entityRenderers)
-        MinecraftForge.EVENT_BUS.addListener(::levelLoad)
+        NeoForge.EVENT_BUS.addListener(::levelLoad)
         modEventBus.addListener(::loadComplete)
 
         TAB_REGISTER.register("general", ::createCreativeTab)
@@ -152,27 +149,11 @@ class Kontraption : IModModule {
 
     @OptIn(VsBeta::class)
     private fun commonSetup(event: FMLCommonSetupEvent) {
-        // 1mB hydrogen + 2*bioFuel/tick*200ticks/100mB * 20x efficiency bonus
-        /*MekanismGases.ETHENE.get().addAttribute(Fuel(MekanismConfig.general.ETHENE_BURN_TIME,
-                FloatingLongSupplier {
-                    MekanismConfig.general.FROM_H2.get().add(MekanismGeneratorsConfig.generators.bioGeneration.get()
-                            .multiply(2L * MekanismConfig.general.ETHENE_BURN_TIME.get()))
-                }))*/
         event.enqueueWork {
             KontraptionTags.init()
-
-            // Ensure our tags are all initialized
-            // GeneratorTags.init()
-            // Register dispenser behaviors
-            // GeneratorsFluids.FLUIDS.registerBucketDispenserBehavior()
-            // Register extended build commands (in enqueue as it is not thread safe)
-            // BuildCommand.register("turbine", GeneratorsLang.TURBINE, TurbineBuilder())
-            // BuildCommand.register("fission", GeneratorsLang.FISSION_REACTOR, FissionReactorBuilder())
-            // BuildCommand.register("fusion", GeneratorsLang.FUSION_REACTOR, FusionReactorBuilder())
         }
         packetHandler.initialize()
 
-        // Finalization
         vsCore.registerAttachment(KontraptionThrusterControl::class.java)
         vsCore.registerAttachment(KontraptionBConfigControlOLD::class.java)
         vsCore.registerAttachment(KontraptionGyroControl::class.java)
@@ -182,8 +163,6 @@ class Kontraption : IModModule {
     }
 
     private fun imcQueue(event: InterModEnqueueEvent) {
-        // MekanismIMC.addMekaSuitHelmetModules(GeneratorsModules.SOLAR_RECHARGING_UNIT)
-        // MekanismIMC.addMekaSuitPantsModules(GeneratorsModules.GEOTHERMAL_GENERATOR_UNIT)
     }
 
     override fun getVersion(): Version = versionNumber
@@ -191,7 +170,6 @@ class Kontraption : IModModule {
     override fun getName(): String = "Kontraption"
 
     override fun resetClient() {
-        // TurbineMultiblockData.clientRotationMap.clear()
     }
 
     private fun loadComplete(event: FMLLoadCompleteEvent) {
@@ -200,17 +178,15 @@ class Kontraption : IModModule {
 
     private fun entityRenderers(event: EntityRenderersEvent.RegisterRenderers) {
         event.registerEntityRenderer(KONTRAPTION_SHIP_MOUNTING_ENTITY_REGISTRY.get(), ::EmptyRenderer)
-        // event.registerEntityRenderer(PHYSICS_ENTITY_TYPE_REGISTRY.get(), ::VSPhysicsEntityRenderer)
     }
 
     fun levelLoad(event: LevelEvent.Load) {
         blockDamageManager.levelLoaded(event.level)
-        // event.registerEntityRenderer(PHYSICS_ENTITY_TYPE_REGISTRY.get(), ::VSPhysicsEntityRenderer)
     }
 
     private fun clientSetup(event: FMLClientSetupEvent) {
-        MinecraftForge.EVENT_BUS.register(this)
-        MinecraftForge.EVENT_BUS.addListener(ClientRuntimeEvents::onRenderWorld)
+        NeoForge.EVENT_BUS.register(this)
+        NeoForge.EVENT_BUS.addListener(ClientRuntimeEvents::onRenderWorld)
         ItemBlockRenderTypes.setRenderLayer(GlobalRegistry.Blocks.OTTER_PLUSHIE.get(), RenderType.cutout())
         ItemBlockRenderTypes.setRenderLayer(GlobalRegistry.Blocks.COSMIC_PLUSHIE.get(), RenderType.cutout())
         ItemBlockRenderTypes.setRenderLayer(GlobalRegistry.Blocks.ILLUC_PLUSHIE.get(), RenderType.cutout())
@@ -237,15 +213,12 @@ class Kontraption : IModModule {
     }
 
     private fun registerBER(event: EntityRenderersEvent.RegisterRenderers) {
-        logger.info("[TEST] RENDERER REGISTERED UWU") // We use this one ONLY for BlockEntity Renderers
+        logger.info("[TEST] RENDERER REGISTERED UWU")
         logger.info("[TEST] CURRENTLY UNUSED AS BER REGISTRATION IS MOVED TO CLIENT INIT")
     }
 
     private fun onConfigLoad(configEvent: ModConfigEvent) {
-        // Note: We listen to both the initial load and the reload, to make sure that we fix any accidentally
-        // cached values from calls before the initial loading
         val config = configEvent.config
-        // Make sure it is for the same modid as us
         if (config.modId == MODID && config is MekanismModConfig) {
             config.clearCache(configEvent)
         }
@@ -259,16 +232,12 @@ class Kontraption : IModModule {
         @JvmField
         val LOGGER: Logger = LogManager.getLogger(Kontraption::class.java)
 
-        // Im BLIND
-        val MENU_TYPES: DeferredRegister<MenuType<*>> = DeferredRegister.create(ForgeRegistries.MENU_TYPES, MODID)
+        val MENU_TYPES: DeferredRegister<MenuType<*>> = DeferredRegister.create(NeoForgeRegistries.MENU_TYPES, MODID)
         val TERMINALMENU: RegistryObject<MenuType<ShipTerminalMenu>> =
             MENU_TYPES.register("terminalconfig") {
                 IForgeMenuType.create { windowId: Int, inv: Inventory, buf: FriendlyByteBuf? -> ShipTerminalMenu(windowId, inv, buf) }
             }
 
-        // val turbineManager: MultiblockManager<TurbineMultiblockData> = MultiblockManager<TurbineMultiblockData>("industrialTurbine", Supplier<MultiblockCache<TurbineMultiblockData>> { TurbineCache() }, Supplier<IStructureValidator<TurbineMultiblockData>> { TurbineValidator() })
-        // val fissionReactorManager: MultiblockManager<FissionReactorMultiblockData> = MultiblockManager<FissionReactorMultiblockData>("fissionReactor", Supplier<MultiblockCache<FissionReactorMultiblockData>> { FissionReactorCache() }, Supplier<IStructureValidator<FissionReactorMultiblockData>> { FissionReactorValidator() })
-        // val fusionReactorManager: MultiblockManager<FusionReactorMultiblockData> = MultiblockManager<FusionReactorMultiblockData>("fusionReactor", Supplier<MultiblockCache<FusionReactorMultiblockData>> { FusionReactorCache() }, Supplier<IStructureValidator<FusionReactorMultiblockData>> { FusionReactorValidator() })
         val hydrogenThrusterManager: MultiblockManager<LiquidFuelThrusterMultiblockData?> =
             MultiblockManager(
                 "hydrogenThruster",
@@ -282,9 +251,9 @@ class Kontraption : IModModule {
 
         fun packetHandler(): KontraptionPacketHandler = instance!!.packetHandler
 
-        fun rl(path: String?): ResourceLocation = ResourceLocation(MODID, path)
+        fun rl(path: String?): ResourceLocation = ResourceLocation.fromNamespaceAndPath(MODID, path)
     }
-    @Mod.EventBusSubscriber(modid = MODID)
+    @EventBusSubscriber(modid = MODID)
     object CommonTick{
         @SubscribeEvent
         fun onServerTick(event: TickEvent.LevelTickEvent){
@@ -311,7 +280,6 @@ class Kontraption : IModModule {
             Minecraft.getInstance().particleEngine.register(
                 MUZZLE_FLASH.get(),
             ) { spriteSet: SpriteSet? -> MuzzleFlashParticle.Factory(spriteSet) }
-            // Minecraft.getInstance().particleEngine.register(BULLET.get()) { spriteSet: SpriteSet? -> BulletParticle.Factory(spriteSet) }
         }
 
         private fun registerTRenderers() {
@@ -322,7 +290,7 @@ class Kontraption : IModModule {
 
         @SubscribeEvent
         fun init(event: FMLClientSetupEvent) {
-            MinecraftForge.EVENT_BUS.register(KontraptionClientTickHandler())
+            NeoForge.EVENT_BUS.register(KontraptionClientTickHandler())
             event.enqueueWork {
                 MenuScreens.register(TERMINALMENU.get(), ::ShipTerminalScreen)
                 var logger: Logger = LogManager.getLogger(Kontraption::class)
@@ -330,11 +298,6 @@ class Kontraption : IModModule {
                 registerTRenderers()
             }
         }
-
-        /*@SubscribeEvent
-        fun init(event: FMLClientSetupEvent?) {
-            OverlayRegistry.registerOverlayAbove(ForgeIngameGui.HOTBAR_ELEMENT, "Toolgun UI", ToolgunUI())
-        }*/
 
         @SubscribeEvent
         fun registerContainers(event: RegisterEvent) {
@@ -360,8 +323,6 @@ class Kontraption : IModModule {
             .displayItems { _, output ->
                 output.accept(KontraptionItems.LIGHTWEIGHT_ALLOY)
                 output.accept(KontraptionItems.TOOLGUN)
-                // output.accept(KontraptionItems.ESTROGEN)
-                // output.accept(KontraptionBlocks.RUBBER_BLOCK)
                 output.accept(KontraptionBlocks.LIQUID_FUEL_THRUSTER_CASING)
                 output.accept(KontraptionBlocks.LIQUID_FUEL_THRUSTER_VALVE)
                 output.accept(KontraptionBlocks.LIQUID_FUEL_THRUSTER_EXHAUST)
@@ -376,11 +337,8 @@ class Kontraption : IModModule {
                 output.accept(GlobalRegistry.Items.LARGE_ION_THRUSTER_VALVE.get())
                 output.accept(GlobalRegistry.Items.LARGE_ION_THRUSTER_COIL.get())
                 output.accept(GlobalRegistry.Items.LARGE_ION_THRUSTER_CASING.get())
-                // divider
                 output.accept(GlobalRegistry.Items.OTTER_PLUSHIE.get())
                 output.accept(GlobalRegistry.Items.COSMIC_PLUSHIE.get())
                 output.accept(GlobalRegistry.Items.ILLUC_PLUSHIE.get())
-                // output.accept(KontraptionBlocks.SERVO)
-                // output.accept(KontraptionBlocks.WHEEL)
             }.build()
 }

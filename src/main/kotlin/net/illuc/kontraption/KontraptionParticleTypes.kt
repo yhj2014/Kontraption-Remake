@@ -9,7 +9,7 @@ import net.minecraftforge.eventbus.api.IEventBus
 object KontraptionParticleTypes {
     val PARTICLE_TYPES = ParticleTypeDeferredRegister(Kontraption.MODID)
 
-    // val PARTICLE_TYPES = DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, Kontraption.MODID)
+    // val PARTICLE_TYPES = DeferredRegister.create(NeoForgeRegistries.PARTICLE_TYPES, Kontraption.MODID)
 
     val THRUSTER = PARTICLE_TYPES.register("thruster") { ThrusterParticleType() }
     val MUZZLE_FLASH = PARTICLE_TYPES.register("muzzle_flash") { MuzzleFlashParticleType() } // was SimpleParticleType(true)

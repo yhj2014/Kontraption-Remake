@@ -1,0 +1,58 @@
+modLoader="kotlinforforge"
+loaderVersion="[5,)"
+license="${mod_license}"
+issueTrackerURL="https://github.com/illucc/Kontraption/issues"
+
+[[mods]]
+modId="kontraption"
+version="${mod_version}"
+displayName="${mod_name}"
+displayURL="https://github.com/illucc/Kontraption"
+logoFile="kontraption.png"
+authors="${mod_authors}"
+description='''${mod_description}'''
+
+[[dependencies.kontraption]]
+    modId="neoforge"
+    mandatory=true
+    versionRange="${neoforge_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.kontraption]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.kontraption]]
+    modId="mekanism"
+    mandatory=true
+    versionRange="[10,)"
+    ordering="BEFORE"
+    side="BOTH"
+
+[[dependencies.kontraption]]
+    modId="kotlinforforge"
+    mandatory=true
+    versionRange="[5,)"
+    ordering="BEFORE"
+    side="BOTH"
+
+[[dependencies.kontraption]]
+    modId="sable"
+    mandatory=true
+    versionRange="[1.2.2,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.kontraption]]
+    modId="computercraft"
+    mandatory=false
+    versionRange="[1,)"
+    ordering="BEFORE"
+    side="BOTH"
+
+[[mixins]]
+    config="kontraption.mixins.json"

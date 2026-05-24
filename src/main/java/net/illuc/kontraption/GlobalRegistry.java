@@ -22,7 +22,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.client.event.RegisterShadersEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.NeoForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.jetbrains.annotations.NotNull;
 
@@ -57,7 +57,7 @@ public final class GlobalRegistry {
     @SuppressWarnings({"rawtypes", "unchecked"})
 
     public static final class Blocks {
-        private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, Kontraption.MODID);
+        private static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(NeoForgeRegistries.BLOCKS, Kontraption.MODID);
 
         //region Block DRO
         private static <T extends LargeIonMultiblockPartBlockTemplate<LargeIonRingMultiBlock, IIonRingPartType>>
@@ -95,7 +95,7 @@ public final class GlobalRegistry {
 
     }
     public static final class Items {
-        private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, Kontraption.MODID);
+        private static final DeferredRegister<Item> ITEMS = DeferredRegister.create(NeoForgeRegistries.ITEMS, Kontraption.MODID);
         //region Items DRO
         private static RegistryObject<ModItem> registerItemGeneric(final String name, final int maxStack) {
             return ITEMS.register(name,
@@ -128,7 +128,7 @@ public final class GlobalRegistry {
     }
 
     public static final class TileEntities {
-        private static final DeferredRegister<BlockEntityType<?>> TILEENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, Kontraption.MODID);
+        private static final DeferredRegister<BlockEntityType<?>> TILEENTITIES = DeferredRegister.create(NeoForgeRegistries.BLOCK_ENTITY_TYPES, Kontraption.MODID);
         //PREDEFS
         //region BlockEnity DRO
         @SafeVarargs

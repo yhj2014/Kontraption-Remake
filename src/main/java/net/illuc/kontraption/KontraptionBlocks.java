@@ -13,7 +13,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.NeoForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 //EVERYTHING IS TO BE MOVED TO GLOBALREGISTRY FUCK ME SIDEWAYS BC I FORGOR

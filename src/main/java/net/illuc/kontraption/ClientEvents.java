@@ -1,19 +1,14 @@
 package net.illuc.kontraption;
 
-import mekanism.common.Mekanism;
-import net.illuc.kontraption.client.MuzzleFlashParticle;
 import net.illuc.kontraption.client.ThrusterParticle;
-import net.illuc.kontraption.renderers.LargeIonRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
-
-import java.util.logging.Logger;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.eventbus.api.EventPriority;
+import net.neoforged.neoforge.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.fml.common.Mod;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
 import static net.illuc.kontraption.client.render.RendererKt.renderData;
 
@@ -28,7 +23,7 @@ public class ClientEvents {
                 var matrixStack = event.getPoseStack();
                 var mainCamera = event.getCamera();
 
-                Minecraft.getInstance().getProfiler().push("vsshipassembler_rendering_phase");
+                Minecraft.getInstance().getProfiler().push("kontraption_rendering_phase");
                 renderData(matrixStack, mainCamera);
                 Minecraft.getInstance().getProfiler().pop();
             }

@@ -18,7 +18,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
-import net.minecraftforge.registries.ForgeRegistries
+import net.minecraftforge.registries.NeoForgeRegistries
 import org.lwjgl.glfw.GLFW
 
 class ShipTerminalScreen(
@@ -183,7 +183,7 @@ class ShipTerminalScreen(
 
             val (absX, absY) = blockListPanel.getChildScreenPos(child) // bleh i had to change how list panel works, while changing how highligh works remember about offset
 
-            val blockItem = ForgeRegistries.BLOCKS.getValue(ResourceLocation(block.blockId))?.asItem() ?: continue
+            val blockItem = NeoForgeRegistries.BLOCKS.getValue(ResourceLocation(block.blockId))?.asItem() ?: continue
             val iconStack = ItemStack(blockItem)
             GG.renderItem(iconStack, absX + 4, absY + (button.height - ICONSIZE) / 2)
             val (clipX1, clipY1, clipX2, clipY2) =

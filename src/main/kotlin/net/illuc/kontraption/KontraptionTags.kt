@@ -22,7 +22,7 @@ object KontraptionTags {
         fun init() {}
 
         /*val BIOETHANOL = forgeTag("bioethanol")
-        val BIOETHANOL_LOOKUP = LazyTagLookup.create(ForgeRegistries.FLUIDS, BIOETHANOL)
+        val BIOETHANOL_LOOKUP = LazyTagLookup.create(NeoForgeRegistries.FLUIDS, BIOETHANOL)
         val DEUTERIUM = forgeTag("deuterium")
         val FUSION_FUEL = forgeTag("fusion_fuel")
         val TRITIUM = forgeTag("tritium")*/
