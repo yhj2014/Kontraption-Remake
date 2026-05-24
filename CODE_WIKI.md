@@ -1,39 +1,39 @@
-# Kontraption Code Wiki
+# Kontraption 代码百科
 
-> **A Space Engineers inspired addon for Mekanism utilizing Valkyrien Skies 2**
+> **灵感来自 Space Engineers 的 Mekanism 模组，使用 Valkyrien Skies 2 实现**
 
-## Table of Contents
+## 目录
 
-1. [Project Overview](#project-overview)
-2. [Architecture Overview](#architecture-overview)
-3. [Module Responsibilities](#module-responsibilities)
-4. [Key Classes and Functions](#key-classes-and-functions)
-5. [Dependency Relationships](#dependency-relationships)
-6. [Configuration System](#configuration-system)
-7. [Network Communication](#network-communication)
-8. [Rendering System](#rendering-system)
-9. [Mixins](#mixins)
-10. [Project Build & Run](#project-build--run)
+1. [项目概述](#项目概述)
+2. [架构概览](#架构概览)
+3. [模块职责](#模块职责)
+4. [核心类与函数](#核心类与函数)
+5. [依赖关系](#依赖关系)
+6. [配置系统](#配置系统)
+7. [网络通信](#网络通信)
+8. [渲染系统](#渲染系统)
+9. [Mixin 注入](#mixin-注入)
+10. [项目构建与运行](#项目构建与运行)
 
 ---
 
-## Project Overview
+## 项目概述
 
-**Kontraption** is a Minecraft mod for Forge 1.20.1 that adds spaceship/aircraft-related blocks and multiblocks. It integrates with:
-- **Valkyrien Skies 2** (v2.4.6+) - For physics-based ship movement
-- **Mekanism** (v10.4.0+) - For energy and chemical systems
+**Kontraption** 是一个基于 Forge 1.20.1 的 Minecraft 模组，添加了飞船/飞行器相关的方块和多方块结构。集成了：
+- **Valkyrien Skies 2** (v2.4.6+) - 物理引擎驱动的飞船移动
+- **Mekanism** (v10.4.0+) - 能量和化学系统
 
-### Key Features
-- **Ion Thruster** - Simple energy-powered thruster
-- **Liquid Fuel Thruster** - Multiblock hydrogen-powered thruster (3x3x3 to 17x17x17)
-- **Large Ion Ring Thruster** - Energy-powered ring-shaped multiblock thruster
-- **Ship Control Interface** - Player-controlled ship piloting
-- **Gyroscope** - Ship rotation stabilization and control
-- **Toolgun** - Ship assembly and movement tool
-- **Railgun** - Multiblock weapon system (WIP)
+### 主要功能
+- **离子推进器** - 消耗能量的单方块推进器
+- **液氢推进器** - 使用氢气的多方块推进器 (3x3x3 到 17x17x17)
+- **大型离子环推进器** - 环形的能量驱动多方块推进器
+- **飞船控制界面** - 玩家驾驶飞船的控制面板
+- **陀螺仪** - 飞船旋转稳定和控制
+- **工具枪** - 飞船组装和移动工具
+- **电磁炮** - 多方块武器系统 (开发中)
 
-### Version Information
-```properties
+### 版本信息
+```
 minecraft_version=1.20.1
 forge_version=47.2.0
 mod_version=0.0.5
@@ -41,181 +41,126 @@ mod_version=0.0.5
 
 ---
 
-## Architecture Overview
+## 架构概览
 
 ```
 kontraption/
 ├── src/main/
 │   ├── java/net/illuc/kontraption/
-│   │   ├── Kontraption.kt                    # Main mod entry point
-│   │   ├── GlobalRegistry.java               # Registry holder
-│   │   ├── KontraptionBlocks.java            # Block definitions
-│   │   ├── KontraptionTileEntityTypes.java   # TileEntity types
-│   │   ├── KontraptionBlockTypes.java        # Block type configurations
-│   │   ├── mixin/                            # Mixin injectors
+│   │   ├── Kontraption.kt                    # 主模组入口
+│   │   ├── GlobalRegistry.java               # 注册表持有者
+│   │   ├── KontraptionBlocks.java            # 方块定义
+│   │   ├── KontraptionTileEntityTypes.java   # 方块实体类型
+│   │   ├── KontraptionBlockTypes.java        # 方块类型配置
+│   │   ├── mixin/                            # Mixin 注入器
 │   │   └── util/
-│   │       └── KontraptionVSUtils.java       # Valkyrien Skies utilities
+│   │       └── KontraptionVSUtils.java       # Valkyrien Skies 工具
 │   │
 │   └── kotlin/net/illuc/kontraption/
-│       ├── blockEntities/                    # TileEntity implementations
-│       │   ├── TileEntityIonThruster.kt
-│       │   ├── TileEntityShipControlInterface.kt
-│       │   ├── TileEntityGyro.kt
-│       │   ├── TileEntityCannon.kt
-│       │   └── largehydrogen/               # Liquid fuel thruster TEs
-│       │   └── railgun/                      # Railgun TEs
-│       │
-│       ├── blocks/                           # Block classes
-│       │   ├── BlockIonThruster.kt
-│       │   ├── BlockGyro.kt
-│       │   └── ShipControlInterfaceBlock.kt
-│       │
-│       ├── ship/                             # Ship physics controllers
-│       │   ├── KontraptionThrusterControl.kt
-│       │   ├── KontraptionGyroControl.kt
-│       │   └── KontraptionKeyBlockControl.kt
-│       │
-│       ├── multiblocks/                      # Multiblock structures
-│       │   ├── largeionring/                # Large ion ring
-│       │   └── largeHydrogenThruster/       # Liquid fuel thruster
-│       │
-│       ├── network/                          # Packet handling
-│       │   └── to_server/
-│       │
-│       ├── client/                           # Client-side rendering
-│       │   ├── KontraptionClientTickHandler.kt
-│       │   └── render/
-│       │
-│       ├── config/                           # Configuration
-│       │   └── KontraptionConfig.kt
-│       │
-│       └── util/                             # Utilities
-│           ├── VSUtils.kt
-│           ├── ShapeGenerators.kt
-│           └── ControllableTileEntity.kt
-│
-└── src/main/resources/
-    ├── META-INF/mods.toml
-    ├── assets/kontraption/
-    │   ├── blockstates/
-    │   ├── models/
-    │   ├── textures/
-    │   └── lang/
-    └── kontraption.mixins.json
+│       ├── blockEntities/                    # 方块实体实现
+│       ├── blocks/                           # 方块类
+│       ├── ship/                             # 飞船物理控制器
+│       ├── multiblocks/                      # 多方块结构
+│       ├── network/                          # 数据包处理
+│       ├── client/                           # 客户端渲染
+│       ├── config/                           # 配置系统
+│       └── util/                             # 工具类
 ```
 
 ---
 
-## Module Responsibilities
+## 模块职责
 
-### 1. Core Module (`Kontraption.kt`)
+### 1. 核心模块 (`Kontraption.kt`)
 
-**File**: [Kontraption.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/Kontraption.kt)
+**文件**: `src/main/kotlin/net/illuc/kontraption/Kontraption.kt`
 
-Main mod entry point annotated with `@Mod(Kontraption.MODID)`.
+使用 `@Mod(Kontraption.MODID)` 注解的主模组入口类。
 
-**Key Responsibilities:**
-- Register all blocks, items, tile entities, and creative tab
-- Initialize network packet handler
-- Register Valkyrien Skies ship attachments
-- Client-side renderer registration
-- Command registration
+**主要职责:**
+- 注册所有方块、物品、方块实体和创造模式标签
+- 初始化网络数据包处理器
+- 注册 Valkyrien Skies 飞船附件
+- 客户端渲染器注册
+- 命令注册
 
-**Key Methods:**
-| Method | Purpose |
-|--------|---------|
-| `commonSetup()` | Initialize multiblocks, tags, packets, VS attachments |
-| `clientSetup()` | Set render layers for blocks |
-| `createCreativeTab()` | Define mod creative tab contents |
-
----
-
-### 2. Block Registry (`KontraptionBlocks.java`, `GlobalRegistry.java`)
-
-**Files**: 
-- [KontraptionBlocks.java](file:///workspace/src/main/java/net/illuc/kontraption/KontraptionBlocks.java)
-- [GlobalRegistry.java](file:///workspace/src/main/java/net/illuc/kontraption/GlobalRegistry.java)
-
-**Key Blocks:**
-| Block | Purpose |
-|-------|---------|
-| `ION_THRUSTER` | Energy-powered thruster |
-| `SHIP_CONTROL_INTERFACE` | Player piloting interface |
-| `GYRO` | Rotation stabilization |
-| `LIQUID_FUEL_THRUSTER_CASING/VALVE/EXHAUST` | Multiblock hydrogen thruster |
-| `CANNON` | Gas-powered projectile weapon |
-| `LARGE_ION_THRUSTER_*` | Ring-shaped multiblock thruster |
-| `RAILGUN_*` | Multiblock railgun components |
-| `*_PLUSHIE` | Decorative blocks (Otter, Cosmic, Illuc) |
+**核心方法:**
+| 方法 | 用途 |
+|------|------|
+| `commonSetup()` | 初始化多方块、标签、数据包、VS 附件 |
+| `clientSetup()` | 设置方块渲染层 |
+| `createCreativeTab()` | 定义模组创造模式标签内容 |
 
 ---
 
-### 3. Tile Entity Module
+### 2. 方块注册
 
-**Base Class**: `ControllableTileEntity` ([ControllableTileEntity.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/util/ControllableTileEntity.kt))
+**核心文件**: 
+- `KontraptionBlocks.java` - 方块定义
+- `GlobalRegistry.java` - 注册表持有者
 
-Abstract base for all controllable blocks, extends Mekanism's `TileEntityMekanism` and implements `IControllable`.
+**核心方块:**
+| 方块 | 用途 |
+|------|------|
+| `ION_THRUSTER` | 能量驱动的推进器 |
+| `SHIP_CONTROL_INTERFACE` | 玩家驾驶界面 |
+| `GYRO` | 旋转稳定 |
+| `LIQUID_FUEL_THRUSTER_*` | 多方块液氢推进器 |
+| `CANNON` | 气体驱动的投射物武器 |
+| `LARGE_ION_THRUSTER_*` | 环形多方块推进器 |
+| `RAILGUN_*` | 电磁炮组件 |
+| `*_PLUSHIE` | 装饰方块 |
 
-**Key Tile Entities:**
+---
+
+### 3. 方块实体模块
+
+**基类**: `ControllableTileEntity`
+
+所有可控制方块的抽象基类，继承 Mekanism 的 `TileEntityMekanism` 并实现 `IControllable`。
 
 #### TileEntityIonThruster
-**File**: [TileEntityIonThruster.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/blockEntities/TileEntityIonThruster.kt)
+能量驱动的单方块推进器。
 
-Energy-powered single-block thruster.
-
+**核心属性:**
 ```kotlin
-class TileEntityIonThruster : ControllableTileEntity, ThrusterInterface {
-    // Energy container for power storage
-    private var energyContainer: MachineEnergyContainer<TileEntityIonThruster>?
-    
-    // Thruster configuration
-    override val thrusterPower: Double = KontraptionConfigs.kontraption.ionThrust.get()
-    override var currentThrust: Double = 0.0
-    override var powered: Boolean = false
-    
-    override fun onUpdateServer() // Energy consumption and thrust calculation
-}
+override val thrusterPower: Double    // 推力功率
+override var currentThrust: Double    // 当前推力
+override var powered: Boolean         // 是否通电
 ```
 
 #### TileEntityShipControlInterface
-**File**: [TileEntityShipControlInterface.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/blockEntities/TileEntityShipControlInterface.kt)
+玩家驾驶飞船的中心控制枢纽。
 
-Central ship control hub for player piloting.
+**核心功能:**
+- 生成玩家座位实体 (`KontraptionShipMountingEntity`)
+- 处理玩家输入到飞船坐标的转换
+- 提供 ComputerCraft 外围设备集成
+- 通过飞船附件控制推进器和陀螺仪
 
-**Key Features:**
-- Spawns `KontraptionShipMountingEntity` for player seat
-- Handles player input transformation to ship coordinates
-- Provides ComputerCraft peripheral integration
-- Controls thrusters and gyros via ship attachments
-
-**Key Methods:**
+**核心方法:**
 ```kotlin
-fun spawnSeat(...)      // Creates player seat entity
-fun tick()             // Process player input, update ship controls
-fun sit(player, force) // Mount player to seat
-fun toggleDampener()   // Toggle inertia dampeners
+fun spawnSeat(...)      // 创建玩家座位实体
+fun tick()             // 处理玩家输入，更新飞船控制
+fun sit(player, force) // 将玩家安装到座位
+fun toggleDampener()   // 切换惯性阻尼器
 ```
 
 #### TileEntityCannon
-**File**: [TileEntityCannon.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/blockEntities/TileEntityCannon.kt)
+使用 Mekanism 氢气的气体驱动投射物武器。
 
-Gas-powered projectile weapon using Mekanism hydrogen.
-
+**核心属性:**
 ```kotlin
-class TileEntityCannon : TileEntityConfigurableMachine {
-    var inputTank: IGasTank?       // Hydrogen gas tank
-    var cooldown: Int = 20         // Fire rate
-    var ship: Ship?                // Parent ship reference
-    
-    override fun onUpdateServer()   // Fire projectiles, spawn particles
-}
+var inputTank: IGasTank?       // 氢气储罐
+var cooldown: Int = 20         // 射击间隔
+var ship: Ship?                // 父飞船引用
 ```
 
 ---
 
-### 4. Ship Physics Control Module
+### 4. 飞船物理控制模块
 
-**Base Interface**: `ThrusterInterface` ([ThrusterInterface.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/ThrusterInterface.kt))
+**基类接口**: `ThrusterInterface`
 
 ```kotlin
 interface ThrusterInterface {
@@ -234,544 +179,262 @@ interface ThrusterInterface {
 ```
 
 #### KontraptionThrusterControl
-**File**: [KontraptionThrusterControl.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/ship/KontraptionThrusterControl.kt)
+实现 `ShipPhysicsListener` 的飞船附件，用于推进器物理。
 
-Ship attachment implementing `ShipPhysicsListener` for thruster physics.
-
-```kotlin
-class KontraptionThrusterControl : ShipPhysicsListener {
-    private val thrusters = CopyOnWriteArrayList<Thruster>()
-    
-    // Thruster data class
-    data class Thruster(
-        val position: Vector3i,
-        val forceDirection: Vector3d,
-        val forceStrength: Double,
-        val thruster: ThrusterInterface,
-    )
-    
-    override fun physTick(physShip: PhysShip, physLevel: PhysLevel)
-    fun setPlayerInput(input: Vector3d)
-    fun setDampenersState(st: Boolean)
-    fun assignThrustPerDirection(requestedThrust: Map<Vector3d, Double>, setMax: Boolean)
-    
-    companion object {
-        fun getOrCreate(ship: LoadedServerShip): KontraptionThrusterControl
-    }
-}
-```
-
-**Physics Algorithm:**
-1. Calculate target velocity from player input
-2. Compute velocity error: `velError = targetVelocity - currentVelocity`
-3. Apply PID-like response: `desiredAccel = velError * response`
-4. Calculate desired force: `desiredForce = desiredAccel * mass`
-5. Apply forces to thrusters aligned with desired force direction
+**物理算法:**
+1. 根据玩家输入计算目标速度
+2. 计算速度误差: `velError = targetVelocity - currentVelocity`
+3. 应用类 PID 响应: `desiredAccel = velError * response`
+4. 计算所需力: `desiredForce = desiredAccel * mass`
+5. 向所需力方向对齐的推进器施加力
 
 #### KontraptionGyroControl
-**File**: [KontraptionGyroControl.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/ship/KontraptionGyroControl.kt)
-
-Ship attachment for rotation control.
-
-```kotlin
-class KontraptionGyroControl : ShipPhysicsListener {
-    private val gyros = CopyOnWriteArrayList<Gyro>()
-    private var targetRotation = Quaterniond()
-    private var targetStrength = 1.0
-    
-    override fun physTick(physShip: PhysShip, physLevel: PhysLevel)
-    fun pointTowards(targetRotation: Quaterniond, power: Double)
-}
-```
+用于旋转控制的飞船附件，使用四元数进行旋转计算。
 
 ---
 
-### 5. Multiblock System
+### 5. 多方块系统
 
-#### Large Ion Ring
-**File**: [LargeIonRingMultiBlock.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/multiblocks/largeionring/LargeIonRingMultiBlock.kt)
+#### 大型离子环
+环形的能量驱动推进器 (5x5 到 15x15 占地面积，2 格高)。
 
-Ring-shaped energy-powered thruster (5x5 to 15x15 footprint, 2 blocks tall).
+**结构验证:**
+- 必须是正方形 (lengthX == lengthZ)
+- 大小范围: 5-15 格
+- 高度: 正好 2 格
+- 必须包含控制器方块
 
-```kotlin
-open class LargeIonRingMultiBlock : AbstractCuboidMultiblockController, ThrusterInterface {
-    var exhaustDirection: Direction = Direction.DOWN
-    var centerExhaust: BlockPos
-    var innerVolume: Int
-    var particleDir: Vector3d
-    val energyStorage: EnergyBuffer
-    
-    override fun isMachineWhole(validatorCallback): Boolean
-    fun serverMachineAssembly()
-}
-```
-
-**Structure Validation:**
-- Must be square (lengthX == lengthZ)
-- Size range: 5-15 blocks
-- Height: exactly 2 blocks
-- Must contain controller block
-- Uses `ShapeGenerators.largeIonRing()` for structure validation
-
-#### Liquid Fuel Thruster
-**File**: [LiquidFuelThrusterMultiblockData.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/multiblocks/largeHydrogenThruster/LiquidFuelThrusterMultiblockData.kt)
-
-Hydrogen-powered multiblock thruster (3x3x3 to 17x17x17).
-
-```kotlin
-class LiquidFuelThrusterMultiblockData : MultiblockData, ThrusterInterface, IValveHandler {
-    var gasTank: IGasTank?          // Hydrogen storage
-    var burnRemaining: Double
-    var currentThrust: Double
-    
-    fun burnFuel(world: Level)
-    fun sendParticleData(...)
-}
-```
+#### 液氢推进器
+氢气驱动的多方块推进器 (3x3x3 到 17x17x17)。
 
 ---
 
-### 6. Networking Module
+### 6. 网络通信模块
 
-**File**: [KontraptionPacketHandler.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/network/KontraptionPacketHandler.kt)
-
-```kotlin
-class KontraptionPacketHandler : BasePacketHandler() {
-    override fun initialize() {
-        // Client to server messages
-        registerClientToServer(PacketKontraptionGuiInteract::class.java)
-        registerClientToServer(PacketKontraptionDriving::class.java)
-        registerClientToServer(PacketKontraptionScreen::class.java)
-    }
-}
-```
-
-#### PacketKontraptionDriving
-**File**: [PacketKontraptionDriving.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/network/to_server/PacketKontraptionDriving.kt)
-
-Transmits player driving input from client to server.
-
-```kotlin
-class PacketKontraptionDriving(
-    val impulse: Vector3dc,    // Movement direction
-    val rotation: Vector3dc,  // Rotation input
-    val openConf: Boolean,    // Config menu toggle
-    val bface: Byte,          // Key bindings state
-) : IMekanismPacket
-```
+**数据包列表:**
+| 数据包 | 方向 | 用途 |
+|--------|------|------|
+| `PacketKontraptionDriving` | 客户端 → 服务器 | 玩家移动/旋转输入 |
+| `PacketKontraptionGuiInteract` | 客户端 → 服务器 | GUI 按钮交互 |
+| `PacketKontraptionScreen` | 客户端 → 服务器 | 屏幕状态同步 |
 
 ---
 
-### 7. Client Module
+### 7. 客户端模块
 
-#### KontraptionClientTickHandler
-**File**: [KontraptionClientTickHandler.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/client/KontraptionClientTickHandler.kt)
-
-Handles client-side tick events for notifications and UI.
-
-#### ClientEvents
-**File**: [ClientEvents.java](file:///workspace/src/main/java/net/illuc/kontraption/ClientEvents.java)
-
-```kotlin
-public class ClientEvents {
-    @Mod.EventBusSubscriber(Dist.CLIENT)
-    public static class ClientRuntimeEvents {
-        @SubscribeEvent
-        public static void onRenderWorld(RenderLevelStageEvent event) {
-            // Renders selection zones and debug info
-            renderData(matrixStack, mainCamera)
-        }
-    }
-}
-```
+**客户端渲染:**
+- `KontraptionClientTickHandler` - 客户端 tick 处理
+- `ClientRuntimeEvents` - 世界渲染钩子
+- `ThrusterParticle` - 推进器粒子渲染
+- `MuzzleFlashParticle` - 炮口火焰渲染
+- `SelectionZoneRenderer` - 工具枪选择区域渲染
 
 ---
 
-### 8. Utilities Module
+### 8. 工具模块
 
-#### VSUtils
-**File**: [VSUtils.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/util/VSUtils.kt) and [KontraptionVSUtils.java](file:///workspace/src/main/java/net/illuc/kontraption/util/KontraptionVSUtils.java)
-
-Valkyrien Skies integration utilities:
-
+**Valkyrien Skies 集成:**
 ```java
 public class KontraptionVSUtils {
     public static LoadedShip getShipManagingPos(Level level, BlockPos blockPos)
     public static LoadedServerShip getShipObjectManagingPos(ServerLevel level, BlockPos blockPos)
     public static void createNewShipWithBlocks(BlockPos pos, DenseBlockPosSet set, ServerLevel level)
-    public static String dimensionID(ServerLevel level)
-}
-```
-
-#### ControllableTileEntity
-**File**: [ControllableTileEntity.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/util/ControllableTileEntity.kt)
-
-Base class for controllable blocks with settings management.
-
-```kotlin
-abstract class ControllableTileEntity : TileEntityMekanism, IControllable {
-    final override val controlSettings = mutableMapOf<String, Any>()
-    
-    override fun registerWithControlSystem()
-    override fun unregisterFromControlSystem()
-    override fun registerControlSettings()
-}
-```
-
-#### ShapeGenerators
-**File**: [ShapeGenerators.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/util/ShapeGenerators.kt)
-
-Generates 3D shapes for multiblock validation.
-
-```kotlin
-object ShapeGenerators {
-    fun largeIonRing(width: Int, height: Int, depth: Int): Shape3D
 }
 ```
 
 ---
 
-## Key Classes and Functions
+## 核心类与函数
 
-### Enums and Data Classes
+### ItemToolgun
+多模式飞船组装和移动工具。
 
-#### KontraptionLang
-**File**: [KontraptionLang.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/KontraptionLang.kt)
+**模式:**
+- `ASSEMBLE` - 选择并从方块创建飞船
+- `MOVE` - 传送现有飞船
+- `LOCK` - 锁定飞船位置 (开发中)
+- `PUSH` - 推动飞船 (开发中)
+- `ROTATE` - 旋转飞船 (开发中)
+- `WELD` - 焊接方块 (开发中)
 
+### ShipControlInterfacePeripheral
+用于 Lua 飞船控制的 ComputerCraft 外围设备。
+
+**可用方法:**
 ```kotlin
-enum class KontraptionLang implements ILangEntry {
-    KONTRAPTION("constants", "mod_name"),
-    MODE_CHANGE("toolgun", "mode_change"),
-    ASSEMBLE("toolgun", "assemble"),
-    // ... more entries
-}
+getRotation()      // 获取旋转四元数
+getMovement()      // 获取移动目标
+getPosition()      // 获取飞船位置
+getWeight()       // 获取飞船质量
+getVelocity()      // 获取飞船速度
+setMovement(x,y,z)      // 设置移动目标
+setRotation(x,y,z,w)    // 设置旋转
+rotateAlongAxis(x,y,z)   // 沿轴旋转
+preciseThrustImpulse(x,y,z) // 精确推力
 ```
-
-### Item Classes
-
-#### ItemToolgun
-**File**: [ItemToolgun.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/item/ItemToolgun.kt)
-
-Multi-mode tool for ship assembly and movement.
-
-**Modes:**
-- `ASSEMBLE` - Select and create ships from blocks
-- `MOVE` - Teleport existing ships
-- `LOCK` - Lock ship position (WIP)
-- `PUSH` - Push ships (WIP)
-- `ROTATE` - Rotate ships (WIP)
-- `WELD` - Weld blocks (WIP)
-
-**Key Methods:**
-```kotlin
-fun makeSelection(level, player, hand, pos)  // Block selection for ship creation
-fun moveSelection(level, player, hand, pos)  // Ship teleportation
-fun inventoryTick(...)                         // Preview rendering
-```
-
-### Peripheral Integration
-
-#### ShipControlInterfacePeripheral
-**File**: [ShipControlInterfacePeripheral.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/peripherals/ShipControlInterfacePeripheral.kt)
-
-ComputerCraft peripheral for Lua ship control.
-
-```kotlin
-class ShipControlInterfacePeripheral : IDynamicPeripheral {
-    // Methods available to CC:
-    // getRotation() -> {x, y, z, w}
-    // getMovement() -> {x, y, z}
-    // getPosition() -> {x, y, z}
-    // getWeight() -> Double
-    // getSlug() -> String
-    // getVelocity() -> {x, y, z}
-    // setMovement(x, y, z)
-    // setRotation(x, y, z, w)
-    // rotateAlongAxis(x, y, z)
-    // preciseThrustImpulse(x, y, z)
-}
-```
-
-### Particle System
-
-#### Particle Data Classes
-**Files**: 
-- [ThrusterParticleData.java](file:///workspace/src/main/java/net/illuc/kontraption/particles/ThrusterParticleData.java)
-- [MuzzleFlashParticleData.java](file:///workspace/src/main/java/net/illuc/kontraption/particles/MuzzleFlashParticleData.java)
 
 ---
 
-## Dependency Relationships
+## 依赖关系
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                          Kontraption                             │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐   │
-│  │ Valkyrien    │     │   Mekanism   │     │ ComputerCraft│   │
-│  │ Skies 2      │     │              │     │              │   │
-│  │              │     │              │     │              │   │
-│  │ - vsCore     │     │ - Energy     │     │ - Peripheral │   │
-│  │ - PhysShip   │     │ - Chemicals  │     │ - Computer    │   │
-│  │ - ShipAttach │     │ - Tanks      │     │   Access      │   │
-│  └──────┬───────┘     └──────┬───────┘     └──────┬───────┘   │
-│         │                    │                    │            │
-│         └────────────────────┼────────────────────┘            │
-│                              │                                 │
-│         ┌────────────────────┴────────────────────┐           │
-│         │         Shared Dependencies             │           │
-│         │                                          │           │
-│         │  - JOML (Vector/Math)                   │           │
-│         │  - Minecraft/Forge API                  │           │
-│         │  - Mixin                                │           │
-│         └─────────────────────────────────────────┘           │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+Kontraption
+    ├── Valkyrien Skies 2 (飞船物理)
+    │       ├── vsCore API
+    │       ├── PhysShip
+    │       └── ShipAttachments
+    │
+    ├── Mekanism (能量、化学系统)
+    │       ├── 能量容器
+    │       ├── 化学储罐
+    │       └── 机器系统
+    │
+    └── ComputerCraft (可选)
+            └── 外围设备 API
 ```
 
-### Build Dependencies (build.gradle)
+**核心依赖:**
 ```groovy
-// Core dependencies
-minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
 // Valkyrien Skies 2
 implementation("org.valkyrienskies.core:api:${vs_core_version}")
-implementation("org.valkyrienskies.core:impl:${vs_core_version}")
 implementation fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs2_version}")
 
 // Mekanism
 implementation fg.deobf("mekanism:Mekanism:${mekanism_version}")
-runtimeOnly fg.deobf("mekanism:Mekanism:${mekanism_version}:generators")
-runtimeOnly fg.deobf("mekanism:Mekanism:${mekanism_version}:additions")
 
-// Other
-implementation "org.joml:joml:1.10.5"
-implementation "com.fasterxml.jackson.core:jackson-annotations:2.13.3"
+// ComputerCraft
 implementation fg.deobf("cc.tweaked:cc-tweaked-1.20.1-forge:1.117.0")
-
-// JEI (runtime)
-runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
 ```
 
 ---
 
-## Configuration System
+## 配置系统
 
-**File**: [KontraptionConfig.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/config/KontraptionConfig.kt)
-
-### Configuration Categories
-
-#### Thrusters
+### 推进器配置
 ```kotlin
-val ionThrust: CachedDoubleValue           // Ion thruster power (default: 400.0)
-val ionConsumption: CachedDoubleValue       // Energy consumption (default: 100.0)
-val liquidFuelThrust: CachedDoubleValue    // Liquid fuel thruster power (default: 90.0)
-val liquidFuelConsumption: CachedDoubleValue // Fuel consumption (default: 30.0)
-val largeIonThrust: CachedDoubleValue      // Large ion ring power (default: 900.0)
-val largeIonEnergyConsumption: CachedDoubleValue // Energy usage (default: 300.0)
+ionThrust = 400.0                    // 离子推进器功率
+ionConsumption = 100.0               // 离子能量消耗
+liquidFuelThrust = 90.0             // 液燃推进器功率
+liquidFuelConsumption = 30.0        // 液燃燃料消耗
+largeIonThrust = 900.0              // 大型离子环功率
+largeIonEnergyConsumption = 300.0    // 大型离子能量消耗
 ```
 
-#### Gyroscope
+### 陀螺仪配置
 ```kotlin
-val gyroTorqueStrength: CachedDoubleValue  // Rotation strength (default: 100.0)
+gyroTorqueStrength = 100.0          // 旋转强度
 ```
 
-#### Physics
+### 物理配置 (PID)
 ```kotlin
-val thrusterSpeedLimit: CachedDoubleValue  // Max ship speed (default: 20.0)
-val dampeningStrength: CachedDoubleValue   // Air resistance (default: 1.0)
-val zeroGravity: CachedBooleanValue         // Disable gravity (default: false)
-val thrusterResponse: CachedDoubleValue     // PID P gain (default: 1.0)
-val dampeningI: CachedDoubleValue          // PID I gain (default: 0.1)
-val dampeningD: CachedDoubleValue          // PID D gain (default: 0.5)
+thrusterSpeedLimit = 20.0            // 最大速度
+dampeningStrength = 1.0              // 空气阻力
+zeroGravity = false                  // 零重力模式
+thrusterResponse = 1.0               // PID P 值
+dampeningI = 0.1                     // PID I 值
+dampeningD = 0.5                     // PID D 值
 ```
 
-#### Toolgun
+### 工具枪配置
 ```kotlin
-val toolgunActionConsumption: CachedFloatingLongValue // Per-use energy
-val toolgunAssembleConsumption: CachedFloatingLongValue // Per-block energy
-val toolgunStorage: CachedFloatingLongValue            // Max capacity
-val toolgunChargeRate: CachedFloatingLongValue        // Charge speed
+toolgunActionConsumption = 1000      // 每次使用能量
+toolgunAssembleConsumption = 1000    // 每方块能量
+toolgunStorage = 20000000             // 最大容量
+toolgunChargeRate = 100000           // 充电速度
 ```
 
 ---
 
-## Network Communication
+## 网络通信
 
-### Packet Flow
+### 数据包流程
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Client    │────▶│   Server    │     │   Server    │
-│   Player    │     │   Packet    │     │   Ship      │
-│   Input     │     │   Handler   │     │   Control   │
-└─────────────┘     └─────────────┘     └─────────────┘
-      │                    │                    │
-      │  PacketKontraption│                    │
-      │  .Driving          │                    │
-      │───────────────────▶│                    │
-      │                    │ Update             │
-      │                    │ SeatedPlayer       │
-      │                    │ Attachment         │
-      │                    │───────────────────▶│
-```
-
-### Registered Packets
-| Packet | Direction | Purpose |
-|--------|-----------|---------|
-| `PacketKontraptionDriving` | Client → Server | Player movement/rotation input |
-| `PacketKontraptionGuiInteract` | Client → Server | GUI button interactions |
-| `PacketKontraptionScreen` | Client → Server | Screen state sync |
-
----
-
-## Rendering System
-
-### Client Renderers
-
-#### LargeIonRenderer
-Renders the large ion ring thruster with custom shaders.
-
-#### PlushieRenderer
-Renders decorative plushie blocks.
-
-### Particle Renderers
-
-#### ThrusterParticle
-Renders thruster exhaust particles.
-
-#### MuzzleFlashParticle
-Renders cannon muzzle flash effects.
-
-### Selection Zone Rendering
-**Files**: 
-- [Renderer.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/client/render/Renderer.kt)
-- [SelectionZoneRenderer.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/client/render/SelectionZoneRenderer.kt)
-
-Renders ship assembly selection boxes with the toolgun.
-
----
-
-## Mixins
-
-**File**: [kontraption.mixins.json](file:///workspace/src/main/resources/kontraption.mixins.json)
-
-### Server-Side Mixins
-| Mixin | Target | Purpose |
-|-------|--------|---------|
-| `MixinLaser` | Laser rendering | Modify laser visuals |
-| `MixinRadiationManager` | Radiation system | Radiation handling |
-| `MixinSoundHandler` | Sound system | Sound modifications |
-| `MixinThermalEvapRender` | Thermal evap rendering | Render changes |
-| `MixinTileEntityDigitalMiner` | Digital miner | Integration |
-
-### Client-Side Mixins
-| Mixin | Target | Purpose |
-|-------|--------|---------|
-| `MixinRenderMechanicalPipe` | Pipe rendering | Custom pipe visuals |
-| `MixinRenderPressureTube` | Tube rendering | Custom tube visuals |
-| `MixinRenderUniversalCable` | Cable rendering | Cable optimization |
-| `MixinGameRenderer` | Game renderer | Global render hooks |
-| `MixinThreadMinerSearch` | Miner search | Search optimizations |
-
-### Example Mixin
-**File**: [MixinTeleporter.java](file:///workspace/src/main/java/net/illuc/kontraption/mixin/MixinTeleporter.java)
-
-```java
-@Mixin(RenderTeleporter.class)
-public class MixinTeleporter {
-    @Redirect(
-        method = "render(...)",
-        at = @At(value = "INVOKE", target = "getColor()")
-    )
-    private EnumColor redirectGetColor(TileEntityTeleporter tile) {
-        return tile.getColor() == null ? EnumColor.AQUA : tile.getColor();
-    }
-}
+玩家输入 → PacketKontraptionDriving → 服务器 → 更新 SeatedPlayer 附件 → 飞船控制
 ```
 
 ---
 
-## Project Build & Run
+## 渲染系统
 
-### Build Requirements
+### 粒子效果
+- `ThrusterParticle` - 推进器尾焰
+- `MuzzleFlashParticle` - 炮口火焰
+- `BulletParticle` - 炮弹
+
+### 渲染器
+- `LargeIonRenderer` - 大型离子环
+- `LargeIonExhaustRenderer` - 离子环排气
+- `PlushieRenderer` - 毛绒方块
+- `SelectionZoneRenderer` - 选择区域
+
+---
+
+## Mixin 注入
+
+**Mixin 列表:**
+
+### 服务器端
+| Mixin | 目标 | 用途 |
+|-------|------|------|
+| `MixinLaser` | 激光渲染 | 修改激光外观 |
+| `MixinRadiationManager` | 辐射系统 | 辐射处理 |
+| `MixinSoundHandler` | 声音系统 | 声音修改 |
+| `MixinTileEntityDigitalMiner` | 数字采矿器 | 集成 |
+
+### 客户端
+| Mixin | 目标 | 用途 |
+|-------|------|------|
+| `MixinRenderMechanicalPipe` | 机械管道渲染 | 自定义管道外观 |
+| `MixinRenderPressureTube` | 压力管道渲染 | 自定义管道外观 |
+| `MixinRenderUniversalCable` | 通用线缆渲染 | 线缆优化 |
+| `MixinGameRenderer` | 游戏渲染器 | 全局渲染钩子 |
+| `MixinThreadMinerSearch` | 采矿器搜索 | 搜索优化 |
+
+---
+
+## 项目构建与运行
+
+### 构建要求
 - Java 17
 - Gradle 8.x
 - Minecraft 1.20.1
 - Forge 47.2.0
 
-### Build Commands
+### 构建命令
 ```bash
-# Build the mod
+# 构建模组
 ./gradlew build
 
-# Run client
+# 运行客户端
 ./gradlew runClient
 
-# Run server
+# 运行服务器
 ./gradlew runServer
 
-# Generate data (recipes, loot tables, tags)
+# 生成数据 (配方、战利品表、标签)
 ./gradlew runData
 ```
 
-### Run Configurations
-```groovy
-minecraft.runs {
-    client {
-        // Launches Minecraft with the mod
-        property 'forge.enabledGameTestNamespaces', mod_id
-    }
-    server {
-        // Launches dedicated server
-        args '--nogui'
-    }
-    data {
-        // Data generation
-        args '--mod', mod_id, '--all', '--output', file('src/generated/resources/')
-    }
-}
-```
-
-### Development Setup
-1. Clone repository
-2. Run `./gradlew setupDecompWorkspace`
-3. Import into IDE (IntelliJ IDEA recommended)
-4. Run client/server via IDE run configurations
+### 开发设置
+1. 克隆仓库
+2. 运行 `./gradlew setupDecompWorkspace`
+3. 导入 IDE (推荐 IntelliJ IDEA)
+4. 通过 IDE 运行配置启动
 
 ---
 
-## Creative Tab Contents
+## 创造模式标签内容
 
-**File**: [Kontraption.kt](file:///workspace/src/main/kotlin/net/illuc/kontraption/Kontraption.kt) → `createCreativeTab()`
-
-Items available in the Kontraption creative tab:
-- `LIGHTWEIGHT_ALLOY` - Crafting material
-- `TOOLGUN` - Ship assembly/movement tool
-- `LIQUID_FUEL_THRUSTER_CASING/VALVE/EXHAUST` - Multiblock thruster parts
-- `ION_THRUSTER` - Single-block thruster
-- `SHIP_CONTROL_INTERFACE` - Ship piloting block
-- `CANNON` - Gas-powered weapon
-- `GYRO` - Rotation control
-- `LARGE_ION_THRUSTER_*` - Ring thruster parts
-- `OTTER_PLUSHIE`, `COSMIC_PLUSHIE`, `ILLUC_PLUSHIE` - Decorative blocks
+- `LIGHTWEIGHT_ALLOY` - 合成材料
+- `TOOLGUN` - 飞船组装/移动工具
+- `LIQUID_FUEL_THRUSTER_*` - 多方块推进器部件
+- `ION_THRUSTER` - 单方块推进器
+- `SHIP_CONTROL_INTERFACE` - 飞船驾驶方块
+- `CANNON` - 气体驱动武器
+- `GYRO` - 旋转控制
+- `LARGE_ION_THRUSTER_*` - 环形推进器部件
+- `*_PLUSHIE` - 装饰方块
 
 ---
 
-## Tags and Registries
-
-### Block Tags
-- `mineable/pickaxe` - Blocks mineable with pickaxe
-
-### Custom Tags
-- `kontraption:femboylist_of_shame.json` - Easter egg tag
-
-### Recipe Data
-- Hot gas thruster recipes
-- Gyroscope recipes
-- Ship control interface recipes
-- Toolgun recipe
-
----
-
-*Document generated from codebase analysis. Last updated: 2026-05-22*
+*文档基于代码库分析生成。更新日期: 2026-05-22*
